@@ -21,3 +21,23 @@ make run
 ```
 
 Use `make help` for more information.
+
+## Debug
+
+```sh
+make gdb
+
+# In another terminal
+gdb kernel/emyx.kernel
+```
+
+In GDB:
+```sh
+(gdb) target remote :1234
+(gdb) b kmain
+(gdb) c
+(gdb) bt
+(gdb) info registers
+(gdb) n
+[...]
+```

@@ -46,6 +46,7 @@ help:
 		"  build    Build and install libc + kernel into sysroot" \
 		"  iso      Build bootable emyx.iso" \
 		"  run      Build ISO and run in QEMU" \
+		"  gdb      Build ISO and run in QEMU with GDB" \
 		"  clean    Clean all build outputs"
 
 explain:
@@ -86,6 +87,9 @@ iso: build
 
 run: iso
 	qemu-system-$(ARCH) -cdrom emyx.iso -serial stdio
+
+gdb: iso
+	qemu-system-$(ARCH) -cdrom emyx.iso -serial stdio -s -S
 
 clean:
 	@for project in $(PROJECTS); do \
