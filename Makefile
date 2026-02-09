@@ -85,7 +85,7 @@ iso: build
 	grub-mkrescue -o emyx.iso isodir
 
 run: iso
-	qemu-system-$(ARCH) -cdrom emyx.iso
+	qemu-system-$(ARCH) -cdrom emyx.iso -serial stdio
 
 clean:
 	@for project in $(PROJECTS); do \
