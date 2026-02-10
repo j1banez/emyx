@@ -1,8 +1,13 @@
 # Emyx
 
-Emyx is an operating system with a kernel and libc written from scratch.
+Emyx is an ealry-stage operating system with a kernel and libc written from scratch.
 
-For now, it just can print text to screen using a basic VGA text-mode driver.
+## Progression
+
+- [x] Bootable ISO (GRUB/Multiboot)
+- [x] VGA text-mode terminal output
+- [x] UART serial debug (COM1)
+- [x] GDT setup and load
 
 ## Prerequisites
 
