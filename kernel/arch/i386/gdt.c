@@ -32,7 +32,7 @@ void gdt_init()
     gdt[1] = new_descriptor(0, 0xFFFFF, 0x9A, 0xC0); // Kernel code
     gdt[2] = new_descriptor(0, 0xFFFFF, 0x92, 0xC0); // Kernel data
 
-    gdtr.base = (uint32_t)&gdt;
+    gdtr.base = (uint32_t)gdt;
     gdtr.limit = sizeof(gdt) - 1;
 
     gdt_flush(&gdtr);

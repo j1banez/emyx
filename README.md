@@ -7,7 +7,7 @@ Emyx is an ealry-stage operating system with a kernel and libc written from scra
 - [x] Bootable ISO (GRUB/Multiboot)
 - [x] VGA text-mode terminal output
 - [x] UART serial debug (COM1)
-- [x] GDT setup and load
+- [x] GDT and IDT setup and load
 
 ## Prerequisites
 
