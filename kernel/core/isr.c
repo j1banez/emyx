@@ -41,6 +41,9 @@ void isr_handler(isr_frame *frame)
 {
     const char *name;
     char error_hex[11];
+    char eip_hex[11];
+    char cs_hex[11];
+    char eflags_hex[11];
 
     if (frame->vector < 32) {
         name = exception_names[frame->vector];
@@ -49,14 +52,29 @@ void isr_handler(isr_frame *frame)
     }
 
     u32_to_hex(error_hex, frame->error_code);
+    u32_to_hex(eip_hex, frame->eip);
+    u32_to_hex(cs_hex, frame->cs);
+    u32_to_hex(eflags_hex, frame->eflags);
 
     printk("EXCEPTION: %s\n", name);
     printk("Error code: %s\n", error_hex);
+    printk("EIP: %s\n", eip_hex);
+    printk("CS: %s\n", cs_hex);
+    printk("EFLAGS: %s\n", eflags_hex);
     serial_writestring("EXCEPTION: ");
     serial_writestring(name);
     serial_writestring("\n");
     serial_writestring("Error code: ");
     serial_writestring(error_hex);
+    serial_writestring("\n");
+    serial_writestring("EIP: ");
+    serial_writestring(eip_hex);
+    serial_writestring("\n");
+    serial_writestring("CS: ");
+    serial_writestring(cs_hex);
+    serial_writestring("\n");
+    serial_writestring("EFLAGS: ");
+    serial_writestring(eflags_hex);
     serial_writestring("\n");
 
     for (;;) { __asm__ volatile("cli; hlt"); }
