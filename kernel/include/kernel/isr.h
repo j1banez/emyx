@@ -3,6 +3,11 @@
 
 #include <stdint.h>
 
-void isr_handler(uint32_t vector);
+typedef struct {
+    uint32_t vector;
+    uint32_t error_code;
+} isr_frame;
+
+void isr_handler(isr_frame *frame);
 
 #endif

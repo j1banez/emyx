@@ -37,19 +37,26 @@ static const char *const exception_names[32] = {
     "reserved",
 };
 
-void isr_handler(uint32_t vector)
+void isr_handler(isr_frame *frame)
 {
     const char *name;
+    char error_hex[11];
 
-    if (vector < 32) {
-        name = exception_names[vector];
+    if (frame->vector < 32) {
+        name = exception_names[frame->vector];
     } else {
         name = "unknown";
     }
 
+    u32_to_hex(error_hex, frame->error_code);
+
     printk("EXCEPTION: %s\n", name);
+    printk("Error code: %s\n", error_hex);
     serial_writestring("EXCEPTION: ");
     serial_writestring(name);
+    serial_writestring("\n");
+    serial_writestring("Error code: ");
+    serial_writestring(error_hex);
     serial_writestring("\n");
 
     for (;;) { __asm__ volatile("cli; hlt"); }
