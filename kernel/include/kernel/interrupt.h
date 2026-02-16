@@ -4,14 +4,21 @@
 #include <stdint.h>
 
 typedef struct {
+    const char *name;
+    uintptr_t value;
+} ex_extra;
+
+typedef struct {
+    const char *name;
     uint32_t vector;
     uint32_t error_code;
-    uint32_t eip;
-    uint32_t cs;
-    uint32_t eflags;
-} isr_frame;
+    uintptr_t pc;
+    uintptr_t status;
+    ex_extra extras[4];
+    uint8_t extra_count;
+} ex_report;
 
-void ex_handler(isr_frame *frame);
+void ex_handler(ex_report *report);
 void irq_handler(uint32_t irq);
 void irq_ack(uint32_t irq);
 

@@ -1,6 +1,6 @@
 .section .text
 
-.extern ex_handler
+.extern i386_ex_handler
 .extern irq_handler
 
 .macro EX_ERR n
@@ -9,7 +9,7 @@
 ex\n:
     push $\n
     push %esp
-    call ex_handler
+    call i386_ex_handler
     add $4, %esp
     add $8, %esp
     cli
@@ -25,7 +25,7 @@ ex\n:
     push $0 # Synthetic error code
     push $\n
     push %esp
-    call ex_handler
+    call i386_ex_handler
     add $4, %esp
     add $8, %esp
     cli

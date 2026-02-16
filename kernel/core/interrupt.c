@@ -2,80 +2,45 @@
 #include <kernel/printk.h>
 #include <kernel/serial.h>
 
-static const char *const exception_names[32] = {
-    "#DE divide by zero",
-    "#DB debug",
-    "NMI interrupt",
-    "#BP breakpoint",
-    "#OF overflow",
-    "#BR bound range exceeded",
-    "#UD invalid opcode",
-    "#NM device not available",
-    "#DF double fault",
-    "coprocessor segment overrun",
-    "#TS invalid TSS",
-    "#NP segment not present",
-    "#SS stack-segment fault",
-    "#GP general protection fault",
-    "#PF page fault",
-    "reserved",
-    "#MF x87 floating-point exception",
-    "#AC alignment check",
-    "#MC machine check",
-    "#XM SIMD floating-point exception",
-    "#VE virtualization exception",
-    "#CP control protection exception",
-    "reserved",
-    "reserved",
-    "reserved",
-    "reserved",
-    "reserved",
-    "reserved",
-    "#HV hypervisor injection exception",
-    "#VC VMM communication exception",
-    "#SX security exception",
-    "reserved",
-};
-
-void ex_handler(isr_frame *frame)
+void ex_handler(ex_report *report)
 {
-    const char *name;
     char error_hex[11];
-    char eip_hex[11];
-    char cs_hex[11];
-    char eflags_hex[11];
+    char pc_hex[11];
+    char status_hex[11];
 
-    if (frame->vector < 32) {
-        name = exception_names[frame->vector];
-    } else {
-        name = "unknown";
-    }
+    u32_to_hex(error_hex, report->error_code);
+    u32_to_hex(pc_hex, report->pc); // TODO: uintptr_to_hex to support u64
+    u32_to_hex(status_hex, report->status);
 
-    u32_to_hex(error_hex, frame->error_code);
-    u32_to_hex(eip_hex, frame->eip);
-    u32_to_hex(cs_hex, frame->cs);
-    u32_to_hex(eflags_hex, frame->eflags);
-
-    printk("EXCEPTION: %s\n", name);
+    printk("EXCEPTION: %s\n", report->name);
     printk("Error code: %s\n", error_hex);
-    printk("EIP: %s\n", eip_hex);
-    printk("CS: %s\n", cs_hex);
-    printk("EFLAGS: %s\n", eflags_hex);
+    printk("PC: %s\n", pc_hex);
+    printk("Status: %s\n", status_hex);
+
     serial_writestring("EXCEPTION: ");
-    serial_writestring(name);
+    serial_writestring(report->name);
     serial_writestring("\n");
     serial_writestring("Error code: ");
     serial_writestring(error_hex);
     serial_writestring("\n");
-    serial_writestring("EIP: ");
-    serial_writestring(eip_hex);
+    serial_writestring("PC: ");
+    serial_writestring(pc_hex);
     serial_writestring("\n");
-    serial_writestring("CS: ");
-    serial_writestring(cs_hex);
+    serial_writestring("Status: ");
+    serial_writestring(status_hex);
     serial_writestring("\n");
-    serial_writestring("EFLAGS: ");
-    serial_writestring(eflags_hex);
-    serial_writestring("\n");
+
+    // Print arch specific details
+    for (int i = 0; i < report->extra_count; i++) {
+        char extra_hex[11];
+
+        u32_to_hex(extra_hex, report->extras[i].value);
+        printk("%s: %s\n", report->extras[i].name, extra_hex);
+        serial_writestring(report->extras[i].name);
+        serial_writestring(": ");
+        serial_writestring(extra_hex);
+        serial_writestring("\n");
+    }
 
     for (;;) { __asm__ volatile("cli; hlt"); }
 }
