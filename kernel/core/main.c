@@ -2,9 +2,8 @@
 #include <kernel/interrupt.h>
 #include <kernel/printk.h>
 #include <kernel/serial.h>
+#include <kernel/timer.h>
 #include <kernel/tty.h>
-
-static const uint32_t IRQ_PRINT_INTERVAL = 50;
 
 void kmain(void) {
     arch_init();
@@ -18,6 +17,6 @@ void kmain(void) {
     while (1) {
         // Wait for interrupt
         cpu_idle();
-        irq_print_stats(IRQ_PRINT_INTERVAL);
+        timer_print();
     }
 }

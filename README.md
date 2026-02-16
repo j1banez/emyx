@@ -8,6 +8,9 @@ Emyx is an ealry-stage operating system with a kernel and libc written from scra
 - [x] VGA text-mode terminal output
 - [x] UART serial debug (COM1)
 - [x] GDT and IDT setup and load
+- [x] CPU exceptions (0-31) with panic diagnostics
+- [x] PIC remap and IRQ controller helpers (mask/unmask, EOI)
+- [x] IRQ0 timer ticks (PIT configured)
 
 ## Prerequisites
 
