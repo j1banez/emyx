@@ -2,41 +2,41 @@
 
 #include "idt.h"
 
-#define DECLARE_ISR(n) extern void isr##n(void)
+#define DECLARE_EX(n) extern void ex##n(void)
 #define DECLARE_IRQ(n) extern void irq##n(void)
 
-DECLARE_ISR(0);
-DECLARE_ISR(1);
-DECLARE_ISR(2);
-DECLARE_ISR(3);
-DECLARE_ISR(4);
-DECLARE_ISR(5);
-DECLARE_ISR(6);
-DECLARE_ISR(7);
-DECLARE_ISR(8);
-DECLARE_ISR(9);
-DECLARE_ISR(10);
-DECLARE_ISR(11);
-DECLARE_ISR(12);
-DECLARE_ISR(13);
-DECLARE_ISR(14);
-DECLARE_ISR(15);
-DECLARE_ISR(16);
-DECLARE_ISR(17);
-DECLARE_ISR(18);
-DECLARE_ISR(19);
-DECLARE_ISR(20);
-DECLARE_ISR(21);
-DECLARE_ISR(22);
-DECLARE_ISR(23);
-DECLARE_ISR(24);
-DECLARE_ISR(25);
-DECLARE_ISR(26);
-DECLARE_ISR(27);
-DECLARE_ISR(28);
-DECLARE_ISR(29);
-DECLARE_ISR(30);
-DECLARE_ISR(31);
+DECLARE_EX(0);
+DECLARE_EX(1);
+DECLARE_EX(2);
+DECLARE_EX(3);
+DECLARE_EX(4);
+DECLARE_EX(5);
+DECLARE_EX(6);
+DECLARE_EX(7);
+DECLARE_EX(8);
+DECLARE_EX(9);
+DECLARE_EX(10);
+DECLARE_EX(11);
+DECLARE_EX(12);
+DECLARE_EX(13);
+DECLARE_EX(14);
+DECLARE_EX(15);
+DECLARE_EX(16);
+DECLARE_EX(17);
+DECLARE_EX(18);
+DECLARE_EX(19);
+DECLARE_EX(20);
+DECLARE_EX(21);
+DECLARE_EX(22);
+DECLARE_EX(23);
+DECLARE_EX(24);
+DECLARE_EX(25);
+DECLARE_EX(26);
+DECLARE_EX(27);
+DECLARE_EX(28);
+DECLARE_EX(29);
+DECLARE_EX(30);
+DECLARE_EX(31);
 
 DECLARE_IRQ(0);
 DECLARE_IRQ(1);
@@ -60,11 +60,11 @@ extern void isr_stub(void);
 static idt_descriptor idt[256];
 static idt_ptr idtr = {0, 0};
 
-static void (*const isr_table[32])(void) = {
-    isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7,
-    isr8, isr9, isr10, isr11, isr12, isr13, isr14, isr15,
-    isr16, isr17, isr18, isr19, isr20, isr21, isr22, isr23,
-    isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31,
+static void (*const exception_table[32])(void) = {
+    ex0, ex1, ex2, ex3, ex4, ex5, ex6, ex7,
+    ex8, ex9, ex10, ex11, ex12, ex13, ex14, ex15,
+    ex16, ex17, ex18, ex19, ex20, ex21, ex22, ex23,
+    ex24, ex25, ex26, ex27, ex28, ex29, ex30, ex31,
 };
 
 static void (*const irq_table[16])(void) = {
@@ -95,10 +95,10 @@ void idt_init()
 
     // Register exceptions
     for (int i = 0; i < 32; i++) {
-        idt[i] = new_descriptor((uint32_t)isr_table[i], 0x08, 0x8E);
+        idt[i] = new_descriptor((uint32_t)exception_table[i], 0x08, 0x8E);
     }
 
-    // Register interrupts
+    // Register hardware interrupts
     for (int i = 0; i < 16; i++) {
         idt[i + 32] = new_descriptor((uint32_t)irq_table[i], 0x08, 0x8E);
     }

@@ -30,8 +30,7 @@ KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
 lib/printk.o \
 core/main.o \
-core/isr.o \
-core/irq.o \
+core/interrupt.o \
 
 OBJS=\
 $(ARCHDIR)/crti.o \

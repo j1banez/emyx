@@ -1,5 +1,5 @@
-#ifndef _ISR_H
-#define _ISR_H
+#ifndef _INTERRUPT_H
+#define _INTERRUPT_H
 
 #include <stdint.h>
 
@@ -11,6 +11,8 @@ typedef struct {
     uint32_t eflags;
 } isr_frame;
 
-void isr_handler(isr_frame *frame);
+void ex_handler(isr_frame *frame);
+void irq_handler(uint32_t irq);
+void irq_ack(uint32_t irq);
 
 #endif

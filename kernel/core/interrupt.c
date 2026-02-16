@@ -1,4 +1,4 @@
-#include <kernel/isr.h>
+#include <kernel/interrupt.h>
 #include <kernel/printk.h>
 #include <kernel/serial.h>
 
@@ -37,7 +37,7 @@ static const char *const exception_names[32] = {
     "reserved",
 };
 
-void isr_handler(isr_frame *frame)
+void ex_handler(isr_frame *frame)
 {
     const char *name;
     char error_hex[11];
@@ -78,4 +78,9 @@ void isr_handler(isr_frame *frame)
     serial_writestring("\n");
 
     for (;;) { __asm__ volatile("cli; hlt"); }
+}
+
+void irq_handler(uint32_t irq)
+{
+    irq_ack(irq);
 }

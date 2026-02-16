@@ -1,4 +1,4 @@
-#include <kernel/irq.h>
+#include <kernel/interrupt.h>
 
 #include "pic.h"
 
