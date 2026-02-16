@@ -3,6 +3,7 @@
 #include <kernel/printk.h>
 #include <kernel/serial.h>
 #include <kernel/timer.h>
+#include <kernel/tty.h>
 
 static volatile uint32_t irq_counts[16];
 
@@ -59,12 +60,22 @@ void irq_handler(uint32_t irq)
 
     if (irq == 1) {
         uint8_t sc = keyboard_read();
+        char key[2];
         char sc_hex[11];
 
-        u32_to_hex(sc_hex, sc);
-        serial_writestring("scancode=");
-        serial_writestring(sc_hex);
-        serial_writestring("\n");
+        key[0] = keyboard_decode(sc);
+        key[1] = '\0';
+
+        if (key[0]) {
+            terminal_putchar(key[0]);
+
+            u32_to_hex(sc_hex, sc);
+            serial_writestring("scancode=");
+            serial_writestring(sc_hex);
+            serial_writestring(" key=");
+            serial_writestring(key);
+            serial_writestring("\n");
+        }
     }
 
     irq_ack(irq);

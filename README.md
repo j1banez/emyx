@@ -11,6 +11,7 @@ Emyx is an ealry-stage operating system with a kernel and libc written from scra
 - [x] CPU exceptions (0-31) with panic diagnostics
 - [x] PIC remap and IRQ controller helpers (mask/unmask, EOI)
 - [x] IRQ0 timer ticks (PIT configured)
+- [x] IRQ1 keyboard press decoding
 
 ## Prerequisites
 
