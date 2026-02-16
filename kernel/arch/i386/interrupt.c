@@ -70,3 +70,18 @@ void irq_ack(uint32_t irq)
 {
     pic_send_eoi((uint8_t)irq);
 }
+
+void irq_enable(void)
+{
+    __asm__ volatile("sti");
+}
+
+void irq_disable(void)
+{
+    __asm__ volatile("cli");
+}
+
+void cpu_idle(void)
+{
+    __asm__ volatile("hlt");
+}

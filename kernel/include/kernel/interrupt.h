@@ -21,5 +21,9 @@ typedef struct {
 void ex_handler(ex_report *report);
 void irq_handler(uint32_t irq);
 void irq_ack(uint32_t irq);
+void irq_enable(void);
+void irq_disable(void);
+void cpu_idle(void);
+void irq_print_stats(uint32_t interval);
 
 #endif

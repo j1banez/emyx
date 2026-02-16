@@ -2,6 +2,9 @@
 #include <kernel/printk.h>
 #include <kernel/serial.h>
 
+static volatile uint32_t irq_counts[16];
+static volatile uint32_t irq_last_prints[16];
+
 void ex_handler(ex_report *report)
 {
     char error_hex[11];
@@ -47,5 +50,29 @@ void ex_handler(ex_report *report)
 
 void irq_handler(uint32_t irq)
 {
+    if (irq < 16)
+        irq_counts[irq]++;
+
     irq_ack(irq);
+}
+
+void irq_print_stats(uint32_t interval)
+{
+    for (int i = 0; i < 16; i++) {
+        // Rate limit, print every interval
+        if (irq_counts[i] - irq_last_prints[i] >= interval) {
+            char irq_hex[11];
+            char count_hex[11];
+
+            u32_to_hex(irq_hex, i);
+            u32_to_hex(count_hex, irq_counts[i]);
+            serial_writestring("IRQ ");
+            serial_writestring(irq_hex);
+            serial_writestring(" count=");
+            serial_writestring(count_hex);
+            serial_writestring("\n");
+
+            irq_last_prints[i] = irq_counts[i];
+        }
+    }
 }
