@@ -9,6 +9,7 @@
 #define ICW1_INIT 0x10
 #define ICW1_ICW4 0x01
 #define ICW4_8086 0x01
+#define PIC_EOI 0x20
 
 void pic_remap(uint8_t master_offset, uint8_t slave_offset)
 {
@@ -30,4 +31,52 @@ void pic_remap(uint8_t master_offset, uint8_t slave_offset)
     // Restore masks
     outb(PIC1_DATA, mask1);
     outb(PIC2_DATA, mask2);
+}
+
+static void irq_to_port_bit(uint8_t irq_line, uint8_t *port, uint8_t *bit)
+{
+    if (irq_line < 8) {
+        *port = PIC1_DATA;
+        *bit = irq_line;
+    } else {
+        *port = PIC2_DATA;
+        *bit = irq_line - 8;
+    }
+}
+
+void pic_set_mask(uint8_t irq_line)
+{
+    uint8_t port;
+    uint8_t bit;
+    uint8_t mask;
+
+    irq_to_port_bit(irq_line, &port, &bit);
+
+    mask = inb(port);
+    mask = mask | (0x1 << bit);
+
+    outb(port, mask);
+}
+
+void pic_clear_mask(uint8_t irq_line)
+{
+    uint8_t port;
+    uint8_t bit;
+    uint8_t mask;
+
+    irq_to_port_bit(irq_line, &port, &bit);
+
+    mask = inb(port);
+    mask = mask & ~(0x1 << bit);
+
+    outb(port, mask);
+}
+
+void pic_send_eoi(uint8_t irq_line)
+{
+    if (irq_line >= 8) {
+        outb(PIC2_COMMAND, PIC_EOI);
+    }
+
+    outb(PIC1_COMMAND, PIC_EOI);
 }
