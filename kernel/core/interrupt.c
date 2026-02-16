@@ -1,4 +1,5 @@
 #include <kernel/interrupt.h>
+#include <kernel/keyboard.h>
 #include <kernel/printk.h>
 #include <kernel/serial.h>
 
@@ -52,6 +53,16 @@ void irq_handler(uint32_t irq)
 {
     if (irq < 16)
         irq_counts[irq]++;
+
+    if (irq == 1) {
+        uint8_t sc = keyboard_read();
+        char sc_hex[11];
+
+        u32_to_hex(sc_hex, sc);
+        serial_writestring("scancode=");
+        serial_writestring(sc_hex);
+        serial_writestring("\n");
+    }
 
     irq_ack(irq);
 }
