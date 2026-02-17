@@ -14,13 +14,14 @@ typedef struct {
 
 static void shell_exec(void);
 static void cmd_help(void);
+static void cmd_clear(void);
 
 static char buffer[128];
 static uint32_t length;
 
 static const shell_cmd commands[] = {
     { "help", "List commands", cmd_help },
-    { "clear", "Clear screen", cmd_help },
+    { "clear", "Clear screen", cmd_clear },
     { "ticks", "Show timer", cmd_help },
     { "irq", "Show IRQ info", cmd_help },
 };
@@ -88,4 +89,9 @@ static void cmd_help(void)
     for (size_t i = 0; i < n; i++) {
         printk("- %s: %s\n", commands[i].name, commands[i].desc);
     }
+}
+
+static void cmd_clear(void)
+{
+    terminal_init();
 }

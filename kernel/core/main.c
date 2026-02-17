@@ -11,7 +11,7 @@ void kmain(void) {
 
     serial_writestring("serial ok\n");
 
-    terminal_initialize();
+    terminal_init();
     shell_init();
 
     irq_enable();
