@@ -24,6 +24,7 @@ char keyboard_decode(uint8_t scancode)
         case 0x09: return '8';
         case 0x0A: return '9';
         case 0x0B: return '0';
+        case 0x0E: return '\b';
 
         case 0x10: return 'q';
         case 0x11: return 'w';

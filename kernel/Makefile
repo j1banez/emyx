@@ -31,6 +31,7 @@ $(KERNEL_ARCH_OBJS) \
 lib/printk.o \
 core/main.o \
 core/interrupt.o \
+core/shell.o \
 core/timer.o \
 
 OBJS=\

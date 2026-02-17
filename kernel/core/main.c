@@ -1,7 +1,7 @@
 #include <kernel/arch.h>
 #include <kernel/interrupt.h>
-#include <kernel/printk.h>
 #include <kernel/serial.h>
+#include <kernel/shell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
 
@@ -10,8 +10,9 @@ void kmain(void) {
     serial_init();
 
     serial_writestring("serial ok\n");
+
     terminal_initialize();
-    printk("Hello, kernel World!\n");
+    shell_init();
 
     irq_enable();
     while (1) {

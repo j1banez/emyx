@@ -2,6 +2,7 @@
 #include <kernel/keyboard.h>
 #include <kernel/printk.h>
 #include <kernel/serial.h>
+#include <kernel/shell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
 
@@ -67,7 +68,7 @@ void irq_handler(uint32_t irq)
         key[1] = '\0';
 
         if (key[0]) {
-            terminal_putchar(key[0]);
+            shell_on_char(key[0]);
 
             u32_to_hex(sc_hex, sc);
             serial_writestring("scancode=");
