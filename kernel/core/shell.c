@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <kernel/arch.h>
 #include <kernel/interrupt.h>
 #include <kernel/printk.h>
 #include <kernel/shell.h>
@@ -19,6 +20,7 @@ static void cmd_clear(void);
 static void cmd_ticks(void);
 static void cmd_irq(void);
 static void cmd_panic(void);
+static void cmd_reboot(void);
 
 static char buffer[128];
 static uint32_t length;
@@ -29,6 +31,7 @@ static const shell_cmd commands[] = {
     { "ticks", "Show timer", cmd_ticks },
     { "irq", "Show IRQ info", cmd_irq },
     { "panic", "Trigger a kernel panic", cmd_panic },
+    { "reboot", "Reboot machine", cmd_reboot },
 };
 
 void shell_init(void)
@@ -124,7 +127,7 @@ static void cmd_irq(void)
  */
 static void cmd_panic(void)
 {
-    printk("Triggering #DE (divide by zero) ...\n");
+    printk("Triggering exception...\n");
 
     volatile uint32_t one = 1;
     volatile uint32_t zero = 0;
@@ -132,3 +135,8 @@ static void cmd_panic(void)
     (void)crash;
 }
 
+static void cmd_reboot(void)
+{
+    printk("Rebooting...\n");
+    arch_reboot();
+}
