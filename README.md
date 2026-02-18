@@ -2,6 +2,8 @@
 
 Emyx is an ealry-stage operating system with a kernel and libc written from scratch.
 
+![Kernel shell screenshot](docs/kernel-shell-screenshot.webp)
+
 ## Progression
 
 - [x] Bootable ISO (GRUB/Multiboot)
@@ -12,6 +14,7 @@ Emyx is an ealry-stage operating system with a kernel and libc written from scra
 - [x] PIC remap and IRQ controller helpers (mask/unmask, EOI)
 - [x] IRQ0 timer ticks (PIT configured)
 - [x] IRQ1 keyboard press decoding
+- [x] Kernel shell with utility commands (help, clear, ticks, irq, panic, reboot)
 
 ## Prerequisites
 
@@ -19,7 +22,7 @@ Emyx is an ealry-stage operating system with a kernel and libc written from scra
 - `grub-mkrescue`
 - `qemu-system-i386`
 
-Toolchain setup notes: `docs/cross-compiler.md`
+Toolchain setup notes: [docs/cross-compiler.md](docs/cross-compiler.md)
 
 ## Quick start
 
