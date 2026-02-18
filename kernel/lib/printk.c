@@ -29,6 +29,30 @@ void u32_to_hex(char out[11], uint32_t value)
     out[10] = '\0';
 }
 
+void u32_to_str(char *out, uint32_t value)
+{
+    char tmp[10];
+    uint32_t i = 0;
+    uint32_t j = 0;
+
+    if (value == 0) {
+        out[0] = '0';
+        out[1] = '\0';
+        return;
+    }
+
+    while (value > 0) {
+        tmp[i++] = (char)('0' + (value % 10));
+        value /= 10;
+    }
+
+    while (i > 0) {
+        out[j++] = tmp[--i];
+    }
+
+    out[j] = '\0';
+}
+
 static bool print_bytes(const char* data, size_t length) {
     terminal_write(data, length);
     return true;
@@ -115,6 +139,23 @@ int printk(const char* format, ...) {
             }
 
             written += 10;
+        } else if (*format == 'u') {
+            char dec[11];
+
+            format++;
+            u32_to_str(dec, va_arg(parameters, uint32_t));
+
+            size_t len = strlen(dec);
+
+            if (maxrem < len) {
+                return -1;
+            }
+
+            if (!print_bytes(dec, len)) {
+                return -1;
+            }
+
+            written += len;
         } else {
             format = format_begun_at;
             size_t len = strlen(format);
