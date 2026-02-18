@@ -18,6 +18,7 @@ static void cmd_help(void);
 static void cmd_clear(void);
 static void cmd_ticks(void);
 static void cmd_irq(void);
+static void cmd_panic(void);
 
 static char buffer[128];
 static uint32_t length;
@@ -27,6 +28,7 @@ static const shell_cmd commands[] = {
     { "clear", "Clear screen", cmd_clear },
     { "ticks", "Show timer", cmd_ticks },
     { "irq", "Show IRQ info", cmd_irq },
+    { "panic", "Trigger a kernel panic", cmd_panic },
 };
 
 void shell_init(void)
@@ -115,3 +117,18 @@ static void cmd_irq(void)
         printk("irq%u: %u\n", i, counts[i]);
     }
 }
+
+/*
+ * Trigger an exception.
+ * `volatile` prevents compiler from removing the division too aggressively.
+ */
+static void cmd_panic(void)
+{
+    printk("Triggering #DE (divide by zero) ...\n");
+
+    volatile uint32_t one = 1;
+    volatile uint32_t zero = 0;
+    volatile uint32_t crash = one / zero;
+    (void)crash;
+}
+
