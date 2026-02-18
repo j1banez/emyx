@@ -38,7 +38,7 @@ void shell_init(void)
 {
     memset(buffer, 0, sizeof(buffer));
     length = 0;
-    printk("emyx>");
+    printk("emyx> ");
 }
 
 void shell_on_char(char c)
