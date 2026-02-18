@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <kernel/interrupt.h>
 #include <kernel/printk.h>
 #include <kernel/shell.h>
 #include <kernel/timer.h>
@@ -16,6 +17,7 @@ static void shell_exec(void);
 static void cmd_help(void);
 static void cmd_clear(void);
 static void cmd_ticks(void);
+static void cmd_irq(void);
 
 static char buffer[128];
 static uint32_t length;
@@ -24,7 +26,7 @@ static const shell_cmd commands[] = {
     { "help", "List commands", cmd_help },
     { "clear", "Clear screen", cmd_clear },
     { "ticks", "Show timer", cmd_ticks },
-    { "irq", "Show IRQ info", cmd_help },
+    { "irq", "Show IRQ info", cmd_irq },
 };
 
 void shell_init(void)
@@ -103,4 +105,13 @@ static void cmd_ticks(void)
 
     // Assumes timer is configured to 100Hz
     printk("Ticks: %u (%x)\nUptime: %us\n", ticks, ticks, ticks / 100);
+}
+
+static void cmd_irq(void)
+{
+    const volatile uint32_t *counts = irq_get_counts();
+
+    for (uint32_t i = 0; i < 16; i++) {
+        printk("irq%u: %u\n", i, counts[i]);
+    }
 }

@@ -25,5 +25,6 @@ void irq_enable(void);
 void irq_disable(void);
 void cpu_idle(void);
 void irq_print_stats(uint32_t interval);
+const volatile uint32_t *irq_get_counts(void);
 
 #endif

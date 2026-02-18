@@ -81,3 +81,8 @@ void irq_handler(uint32_t irq)
 
     irq_ack(irq);
 }
+
+const volatile uint32_t *irq_get_counts(void)
+{
+    return irq_counts;
+} 
