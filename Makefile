@@ -7,6 +7,7 @@ SYSTEM_HEADER_PROJECTS := libc kernel
 AR := $(HOST)-ar
 AS := $(HOST)-as
 CC_BASE := $(HOST)-gcc
+QEMU := qemu-system-$(ARCH)
 
 PREFIX ?= /usr
 EXEC_PREFIX ?= $(PREFIX)
@@ -17,6 +18,8 @@ INCLUDEDIR ?= $(PREFIX)/include
 CFLAGS ?= -O2 -g
 CPPFLAGS ?=
 export CFLAGS CPPFLAGS
+
+QEMU_FLAGS ?= -cdrom emyx.iso -serial stdio -display sdl
 
 SYSROOT := $(CURDIR)/sysroot
 CC := $(CC_BASE) --sysroot=$(SYSROOT)
@@ -86,10 +89,10 @@ iso: build
 	grub-mkrescue -o emyx.iso isodir
 
 run: iso
-	qemu-system-$(ARCH) -cdrom emyx.iso -serial stdio
+	$(QEMU) $(QEMU_FLAGS)
 
 gdb: iso
-	qemu-system-$(ARCH) -cdrom emyx.iso -serial stdio -s -S
+	$(QEMU) $(QEMU_FLAGS) -s -S
 
 clean:
 	@for project in $(PROJECTS); do \
