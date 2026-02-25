@@ -1,3 +1,7 @@
 *.iso
 isodir
 sysroot
+
+# clangd LSP
+compile_commands.json
+.cache
