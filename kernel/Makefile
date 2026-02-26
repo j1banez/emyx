@@ -28,11 +28,12 @@ LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 
 KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
-lib/printk.o \
 core/main.o \
 core/interrupt.o \
 core/shell.o \
 core/timer.o \
+lib/panic.o \
+lib/printk.o \
 
 OBJS=\
 $(ARCHDIR)/crti.o \

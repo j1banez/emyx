@@ -38,3 +38,15 @@ void arch_reboot(void)
         __asm__ volatile ("hlt");
     }
 }
+
+void arch_idle(void)
+{
+    __asm__ volatile("hlt");
+}
+
+void arch_halt()
+{
+    for (;;) {
+        __asm__ volatile ("cli; hlt");
+    }
+}

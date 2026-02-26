@@ -80,8 +80,3 @@ void irq_disable(void)
 {
     __asm__ volatile("cli");
 }
-
-void cpu_idle(void)
-{
-    __asm__ volatile("hlt");
-}
