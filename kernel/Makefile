@@ -32,6 +32,7 @@ core/main.o \
 core/interrupt.o \
 core/shell.o \
 core/timer.o \
+core/pmm.o \
 lib/panic.o \
 lib/printk.o \
 

@@ -24,16 +24,29 @@ stack_top:
 .global _start
 .type _start, @function
 _start:
-	movl $stack_top, %esp
+    movl $stack_top, %esp
 
-	# Call the global constructors.
-	call _init
+    # Save GRUB inputs
+    push %eax
+    push %ebx
 
-	# Transfer control to the main kernel.
-	call kmain
+    # Call the global constructors.
+    call _init
 
-	# Hang if kmain unexpectedly returns.
-	cli
-1:	hlt
-	jmp 1b
+    # Restore and push GRUB input for kmain
+    pop %ebx
+    pop %eax
+    # Multiboot info
+    push %ebx
+    # Multiboot `magic`
+    push %eax
+
+    # Transfer control to the main kernel.
+    call kmain
+
+    # Hang if kmain unexpectedly returns.
+    cli
+1:
+    hlt
+    jmp 1b
 .size _start, . - _start
