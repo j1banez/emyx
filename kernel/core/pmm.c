@@ -4,7 +4,11 @@
 
 #define MULTIBOOT_FLAG_MMAP (1u << 6)
 #define PAGE_SHIFT 12 // 4 KiB (4096) pages
+#define PAGE_SIZE (1u << PAGE_SHIFT)
 #define PMM_BITMAP_BYTES 131072
+
+extern uint8_t __kernel_start[];
+extern uint8_t __kernel_end[];
 
 typedef struct {
     uint32_t flags;
@@ -51,6 +55,17 @@ static uint8_t bitmap_test(uint32_t page)
     return pmm_bitmap[page / 8] & (1u << (page % 8));
 }
 
+static void reserve_page(uint32_t page)
+{
+    if (page >= PMM_BITMAP_BYTES * 8)
+        return;
+    if (bitmap_test(page) == 0) {
+        bitmap_set(page);
+        if (pmm_free_pages > 0)
+            pmm_free_pages--;
+    }
+}
+
 static uint32_t handle_entry(multiboot_mmap_entry *entry, uint32_t max_pages)
 {
     if (entry->size < 20) {
@@ -85,6 +100,25 @@ static uint32_t handle_entry(multiboot_mmap_entry *entry, uint32_t max_pages)
     return 0;
 }
 
+static uint64_t overlap_bytes(
+    multiboot_mmap_entry *entry, uint64_t start, uint64_t end
+)
+{
+    if (entry->type != 1)
+        return 0;
+
+    uint64_t estart = entry->addr;
+    uint64_t eend = entry->addr + entry->len;
+
+    uint64_t max_start = (estart > start) ? estart : start;
+    uint64_t max_end = (eend < end) ? eend : end;
+
+    if (max_start >= max_end)
+        return 0;
+
+    return max_end - max_start;
+}
+
 void pmm_init(void *mbi_ptr)
 {
     multiboot_info *mbi = (multiboot_info *)mbi_ptr;
@@ -102,20 +136,36 @@ void pmm_init(void *mbi_ptr)
     uint32_t total_regions = 0;
     uint32_t usable_pages = 0;
     uint32_t max_pages = PMM_BITMAP_BYTES * 8;
+    uint64_t kstart = (uint64_t)(uintptr_t)__kernel_start;
+    uint64_t kend = (uint64_t)(uintptr_t)__kernel_end;
+    uint64_t kernel_overlap = 0;
 
     while (ptr < end) {
         total_regions++;
         multiboot_mmap_entry *entry = (multiboot_mmap_entry *)ptr;
 
         usable_pages += handle_entry(entry, max_pages);
+        kernel_overlap += overlap_bytes(entry, kstart, kend);
 
         ptr += entry->size + sizeof(entry->size);
     }
 
-    bitmap_set(0);
+    if (kernel_overlap < (kend - kstart))
+        panic("kernel not fully located in usable RAM");
 
     pmm_total_pages = usable_pages;
-    pmm_free_pages = (usable_pages > 0) ? (usable_pages - 1) : 0;
+    pmm_free_pages = usable_pages;
+
+    uint64_t kstart_page = kstart >> PAGE_SHIFT;
+    uint64_t kend_page = (kend + PAGE_SIZE - 1) >> PAGE_SHIFT;
+
+    // Reserve pages where kernel lies
+    for (uint64_t page = kstart_page; page < kend_page; page++) {
+        reserve_page((uint32_t)page);
+    }
+
+    // Reserve page 0 so memory address 0 (null pointer) is not allocatable.
+    reserve_page(0);
 
     printk("pmm: regions=%u usable_pages=%u\n", total_regions, usable_pages);
     printk("pmm: total=%u free=%u\n",
