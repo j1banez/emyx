@@ -3,8 +3,6 @@
 #include <kernel/printk.h>
 
 #define MULTIBOOT_FLAG_MMAP (1u << 6)
-#define PAGE_SHIFT 12 // 4 KiB (4096) pages
-#define PAGE_SIZE (1u << PAGE_SHIFT)
 
 extern uint8_t __kernel_start[];
 extern uint8_t __kernel_end[];
@@ -73,8 +71,8 @@ static void reserve_page(uint32_t page)
  */
 static void reserve_segment(uintptr_t start_addr, uintptr_t end_addr)
 {
-    uint32_t start_page = start_addr >> PAGE_SHIFT;
-    uint32_t end_page = (end_addr + PAGE_SIZE - 1) >> PAGE_SHIFT;
+    uint32_t start_page = start_addr >> PMM_PAGE_SHIFT;
+    uint32_t end_page = (end_addr + PMM_PAGE_SIZE - 1) >> PMM_PAGE_SHIFT;
 
     for (uint32_t page = start_page; page < end_page; page++) {
         reserve_page(page);
@@ -121,8 +119,8 @@ static uint32_t clear_usable_pages(multiboot_info *mbi)
         multiboot_mmap_entry *entry = (multiboot_mmap_entry *)ptr;
 
         if (entry->type == 1) {
-            uint32_t start_page = (uint32_t)(entry->addr >> PAGE_SHIFT);
-            uint32_t region_pages = (uint32_t)(entry->len >> PAGE_SHIFT);
+            uint32_t start_page = (uint32_t)(entry->addr >> PMM_PAGE_SHIFT);
+            uint32_t region_pages = (uint32_t)(entry->len >> PMM_PAGE_SHIFT);
             uint32_t end_page = start_page + region_pages;
 
             if (start_page >= pmm_max_page) {
@@ -159,7 +157,7 @@ static uint32_t find_max_page(multiboot_info *mbi)
         multiboot_mmap_entry *entry = (multiboot_mmap_entry *)ptr;
 
         if (entry->type == 1) {
-            uint64_t entry_max_page = (entry->addr + entry->len) >> PAGE_SHIFT;
+            uint64_t entry_max_page = (entry->addr + entry->len) >> PMM_PAGE_SHIFT;
 
             if (entry_max_page > max_page)
                 max_page = entry_max_page;
@@ -218,7 +216,7 @@ static uintptr_t find_segment(multiboot_info *mbi, uint32_t bytes)
         // Avoid null pointer
         uintptr_t estart = entry->addr == 0 ? 1 : (uintptr_t)entry->addr;
         uintptr_t eend = (uintptr_t)(entry->addr + entry->len);
-        uintptr_t start = align_up(estart, PAGE_SIZE);
+        uintptr_t start = align_up(estart, PMM_PAGE_SIZE);
 
         while (start + bytes <= eend) {
             uintptr_t kstart = (uintptr_t)__kernel_start;
@@ -226,7 +224,7 @@ static uintptr_t find_segment(multiboot_info *mbi, uint32_t bytes)
 
             // Current range is overlaping kernel
             if (ranges_overlap(start, start + bytes, kstart, kend)) {
-                start = align_up(kend, PAGE_SIZE);
+                start = align_up(kend, PMM_PAGE_SIZE);
                 continue;
             }
 
@@ -235,7 +233,7 @@ static uintptr_t find_segment(multiboot_info *mbi, uint32_t bytes)
 
             // Current range is overlaping multiboot info
             if (ranges_overlap(start, start + bytes, mbi_start, mbi_end)) {
-                start = align_up(mbi_end, PAGE_SIZE);
+                start = align_up(mbi_end, PMM_PAGE_SIZE);
                 continue;
             }
 
@@ -244,7 +242,7 @@ static uintptr_t find_segment(multiboot_info *mbi, uint32_t bytes)
 
             // Current range is overlaping mmap
             if (ranges_overlap(start, start + bytes, mmap_start, mmap_end)) {
-                start = align_up(mmap_end, PAGE_SIZE);
+                start = align_up(mmap_end, PMM_PAGE_SIZE);
                 continue;
             }
 
@@ -322,7 +320,7 @@ uintptr_t pmm_alloc_page(void)
         if (bitmap_test(i) == 0) {
             bitmap_set(i);
             if (pmm_free_pages > 0) pmm_free_pages--;
-            return i << PAGE_SHIFT;
+            return i << PMM_PAGE_SHIFT;
         }
     }
 
@@ -331,7 +329,7 @@ uintptr_t pmm_alloc_page(void)
 
 void pmm_free_page(uintptr_t addr)
 {
-    uint32_t page = addr >> PAGE_SHIFT;
+    uint32_t page = addr >> PMM_PAGE_SHIFT;
 
     if (page != 0 && page < pmm_max_page && bitmap_test(page)) {
         bitmap_clear(page);

@@ -9,6 +9,7 @@
 #include <kernel/shell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
+#include <kernel/vmm.h>
 
 #define MULTIBOOT_MAGIC 0x2badb002
 
@@ -22,6 +23,7 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
     }
 
     pmm_init((void *)(uintptr_t)mbi_addr);
+    vmm_init(16u * 1024u * 1024u);
     arch_init();
     shell_init();
     irq_enable();
