@@ -28,12 +28,12 @@ LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 
 KERNEL_OBJS=\
 $(KERNEL_ARCH_OBJS) \
-core/main.o \
-core/interrupt.o \
-core/shell.o \
-core/timer.o \
-core/pmm.o \
-core/vmm.o \
+main.o \
+interrupt.o \
+shell.o \
+timer.o \
+mm/pmm.o \
+mm/vmm.o \
 lib/panic.o \
 lib/printk.o \
 
