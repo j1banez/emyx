@@ -14,7 +14,7 @@ typedef struct {
     uint32_t error_code;
     uintptr_t pc;
     uintptr_t status;
-    ex_extra extras[4];
+    ex_extra extras[8];
     uint8_t extra_count;
 } ex_report;
 

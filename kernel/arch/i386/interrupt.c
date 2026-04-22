@@ -1,4 +1,5 @@
 #include <kernel/interrupt.h>
+#include <kernel/paging.h>
 
 #include "ex.h"
 #include "pic.h"
@@ -43,19 +44,47 @@ static const char *const exception_names[32] = {
  */
 void i386_ex_handler(ex_frame *frame)
 {
-    ex_extra cs = {
-        .name = "CS",
-        .value = frame->cs,
-    };
-
     ex_report report = {
         .vector = frame->vector,
         .error_code = frame->error_code,
         .pc = frame->eip,
         .status = frame->eflags,
-        .extras = {cs},
-        .extra_count = 1,
+        .extra_count = 0,
     };
+
+    report.extras[report.extra_count++] = (ex_extra){
+        .name = "CS",
+        .value = frame->cs,
+    };
+
+    if (frame->vector == 14) {
+        uint32_t error = frame->error_code;
+
+        report.extras[report.extra_count++] = (ex_extra){
+            .name = "CR2",
+            .value = paging_fault_addr(),
+        };
+        report.extras[report.extra_count++] = (ex_extra){
+            .name = "PF_PRESENT",
+            .value = (error >> 0) & 0x1,
+        };
+        report.extras[report.extra_count++] = (ex_extra){
+            .name = "PF_WRITE",
+            .value = (error >> 1) & 0x1,
+        };
+        report.extras[report.extra_count++] = (ex_extra){
+            .name = "PF_USER",
+            .value = (error >> 2) & 0x1,
+        };
+        report.extras[report.extra_count++] = (ex_extra){
+            .name = "PF_RSVD",
+            .value = (error >> 3) & 0x1,
+        };
+        report.extras[report.extra_count++] = (ex_extra){
+            .name = "PF_ID",
+            .value = (error >> 4) & 0x1,
+        };
+    }
 
     if (frame->vector < 32) {
         report.name = exception_names[frame->vector];

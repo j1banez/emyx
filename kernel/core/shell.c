@@ -7,6 +7,7 @@
 #include <kernel/shell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
+#include <kernel/vmm.h>
 
 typedef struct {
     const char *name;
@@ -21,6 +22,7 @@ static void cmd_ticks(void);
 static void cmd_irq(void);
 static void cmd_panic(void);
 static void cmd_reboot(void);
+static void cmd_pagefault(void);
 
 static char buffer[128];
 static uint32_t length;
@@ -32,6 +34,7 @@ static const shell_cmd commands[] = {
     { "irq", "Show IRQ info", cmd_irq },
     { "panic", "Trigger a kernel panic", cmd_panic },
     { "reboot", "Reboot machine", cmd_reboot },
+    { "pagefault", "Trigger page fault", cmd_pagefault },
 };
 
 void shell_init(void)
@@ -139,4 +142,13 @@ static void cmd_reboot(void)
 {
     printk("Rebooting...\n");
     arch_reboot();
+}
+
+static void cmd_pagefault(void)
+{
+    printk("Triggering pagefault...\n");
+
+    volatile uint32_t *bad = (volatile uint32_t *)VMM_BOOTSTRAP_LIMIT;
+    volatile uint32_t val = *bad;
+    (void)val;
 }

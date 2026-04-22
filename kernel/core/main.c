@@ -23,7 +23,7 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
     }
 
     pmm_init((void *)(uintptr_t)mbi_addr);
-    vmm_init(16u * 1024u * 1024u);
+    vmm_init(VMM_BOOTSTRAP_LIMIT);
     arch_init();
     shell_init();
     irq_enable();
