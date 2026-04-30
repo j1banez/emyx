@@ -3,6 +3,7 @@
 
 #include <kernel/arch.h>
 #include <kernel/interrupt.h>
+#include <kernel/pmm.h>
 #include <kernel/printk.h>
 #include <kernel/shell.h>
 #include <kernel/timer.h>
@@ -23,6 +24,7 @@ static void cmd_irq(void);
 static void cmd_panic(void);
 static void cmd_reboot(void);
 static void cmd_pagefault(void);
+static void cmd_vmmtest(void);
 
 static char buffer[128];
 static uint32_t length;
@@ -35,6 +37,7 @@ static const shell_cmd commands[] = {
     { "panic", "Trigger a kernel panic", cmd_panic },
     { "reboot", "Reboot machine", cmd_reboot },
     { "pagefault", "Trigger page fault", cmd_pagefault },
+    { "vmmtest", "Run VMM smoke test", cmd_vmmtest },
 };
 
 void shell_init(void)
@@ -151,4 +154,36 @@ static void cmd_pagefault(void)
     volatile uint32_t *bad = (volatile uint32_t *)VMM_BOOTSTRAP_LIMIT;
     volatile uint32_t val = *bad;
     (void)val;
+}
+
+static void cmd_vmmtest(void)
+{
+    uintptr_t paddr;
+    uintptr_t original_paddr;
+    int ret;
+
+    ret = vmm_get_physaddr(0x00F00000, &paddr);
+    printk("vmm_get_physaddr before: ret=%x paddr=%x\n", ret, paddr);
+
+    if (ret != 0)
+        return;
+
+    original_paddr = paddr & ~(uintptr_t)(PMM_PAGE_SIZE - 1);
+
+    ret = vmm_map_page(0x00F00000, 0x00000000,
+        VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE);
+    printk("vmm_map_page: ret=%x\n", ret);
+
+    ret = vmm_get_physaddr(0x00F00000, &paddr);
+    printk("vmm_get_physaddr after map: ret=%x paddr=%x\n", ret, paddr);
+
+    ret = vmm_unmap_page(0x00F00000);
+    printk("vmm_unmap_page: ret=%x\n", ret);
+
+    ret = vmm_map_page(0x00F00000, original_paddr,
+        VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE);
+    printk("vmm_restore_page: ret=%x\n", ret);
+
+    ret = vmm_get_physaddr(0x00F00000, &paddr);
+    printk("vmm_get_physaddr after restore: ret=%x paddr=%x\n", ret, paddr);
 }

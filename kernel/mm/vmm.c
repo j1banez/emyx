@@ -6,8 +6,10 @@
 #include <kernel/vmm.h>
 
 #define PAGE_TABLE_SPAN (1024u * PMM_PAGE_SIZE)
+#define VMM_PDE_INDEX(vaddr) (((vaddr) >> 22) & 0x3ff)
+#define VMM_PTE_INDEX(vaddr) (((vaddr) >> 12) & 0x3ff)
 
-uintptr_t page_directory;
+static uintptr_t page_directory;
 
 void vmm_init(size_t limit)
 {
@@ -55,3 +57,67 @@ void vmm_init(size_t limit)
  * - pt_idx indexes page table entries in one page table.
  * - offset is byte offset inside the final 4 KiB physical page frame.
  */
+static uint32_t *vmm_get_page_table(uintptr_t vaddr)
+{
+    uint32_t *pd_ptr = (uint32_t *)page_directory;
+    uint32_t pde = pd_ptr[VMM_PDE_INDEX(vaddr)];
+
+    if ((pde & 0x1) == 0)
+        return 0;
+
+    return (uint32_t *)(uintptr_t)(pde & 0xfffff000);
+}
+
+int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags)
+{
+    // Check that addresses are page aligned
+    if ((vaddr & (PMM_PAGE_SIZE - 1)) != 0)
+        return -1;
+    if ((paddr & (PMM_PAGE_SIZE - 1)) != 0)
+        return -1;
+
+    uint32_t *pt_ptr = vmm_get_page_table(vaddr);
+
+    if (pt_ptr == 0)
+        return -1;
+
+    pt_ptr[VMM_PTE_INDEX(vaddr)] = paddr | (flags & 0xfff);
+    paging_tlb_invalidate(vaddr);
+    return 0;
+}
+
+int vmm_unmap_page(uintptr_t vaddr)
+{
+    if ((vaddr & (PMM_PAGE_SIZE - 1)) != 0)
+        return -1;
+
+    uint32_t *pt_ptr = vmm_get_page_table(vaddr);
+
+    if (pt_ptr == 0)
+        return -1;
+
+    uint32_t pt_idx = VMM_PTE_INDEX(vaddr);
+
+    if ((pt_ptr[pt_idx] & VMM_PAGE_PRESENT) == 0)
+        return -1;
+
+    pt_ptr[pt_idx] = 0;
+    paging_tlb_invalidate(vaddr);
+    return 0;
+}
+
+int vmm_get_physaddr(uintptr_t vaddr, uintptr_t *paddr)
+{
+    uint32_t *pt_ptr = vmm_get_page_table(vaddr);
+
+    if (paddr == 0 || pt_ptr == 0)
+        return -1;
+
+    uint32_t pte = pt_ptr[VMM_PTE_INDEX(vaddr)];
+
+    if ((pte & VMM_PAGE_PRESENT) == 0)
+        return -1;
+
+    *paddr = (pte & 0xfffff000) | (vaddr & 0xfff);
+    return 0;
+}
