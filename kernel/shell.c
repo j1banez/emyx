@@ -3,6 +3,7 @@
 
 #include <kernel/arch.h>
 #include <kernel/interrupt.h>
+#include <kernel/kmalloc.h>
 #include <kernel/pmm.h>
 #include <kernel/printk.h>
 #include <kernel/shell.h>
@@ -25,6 +26,7 @@ static void cmd_panic(void);
 static void cmd_reboot(void);
 static void cmd_pagefault(void);
 static void cmd_vmmtest(void);
+static void cmd_heaptest(void);
 
 static char buffer[128];
 static uint32_t length;
@@ -38,6 +40,7 @@ static const shell_cmd commands[] = {
     { "reboot", "Reboot machine", cmd_reboot },
     { "pagefault", "Trigger page fault", cmd_pagefault },
     { "vmmtest", "Run VMM smoke test", cmd_vmmtest },
+    { "heaptest", "Run heap smoke test", cmd_heaptest },
 };
 
 void shell_init(void)
@@ -186,4 +189,35 @@ static void cmd_vmmtest(void)
 
     ret = vmm_get_physaddr(0x00F00000, &paddr);
     printk("vmm_get_physaddr after restore: ret=%x paddr=%x\n", ret, paddr);
+}
+
+static void cmd_heaptest(void)
+{
+    uint32_t *a = kmalloc(sizeof(*a));
+    uint32_t *b = kmalloc(sizeof(*b));
+
+    printk("kmalloc a=%x b=%x\n", a, b);
+
+    if (a == NULL || b == NULL)
+        return;
+
+    *a = 0x12345678;
+    *b = 0x9abcdef0;
+
+    printk("heap values a=%x b=%x\n", *a, *b);
+    kfree(a);
+
+    uint32_t *c = kmalloc(sizeof(*c));
+
+    printk("kmalloc c=%x\n", c);
+
+    if (c == NULL)
+        return;
+
+    *c = 0xfeedbeef;
+
+    printk("heap value c=%x reused=%x\n", *c, c == a);
+
+    kfree(b);
+    kfree(c);
 }

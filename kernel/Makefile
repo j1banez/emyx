@@ -34,6 +34,7 @@ shell.o \
 timer.o \
 mm/pmm.o \
 mm/vmm.o \
+mm/kmalloc.o \
 lib/panic.o \
 lib/printk.o \
 
