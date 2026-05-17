@@ -58,6 +58,14 @@ static void *alloc_from_block(heap_block *block, size_t size)
     return block + 1;
 }
 
+static void coalesce_next(heap_block *block)
+{
+    while (block->next != NULL && block->next->free) {
+        block->size += sizeof(heap_block) + block->next->size;
+        block->next = block->next->next;
+    }
+}
+
 void *kmalloc(size_t size)
 {
     size_t asize;
@@ -106,4 +114,5 @@ void kfree(void *ptr)
 
     heap_block *block = ((heap_block *)ptr) - 1;
     block->free = 1;
+    coalesce_next(block);
 }
