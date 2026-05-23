@@ -15,6 +15,9 @@ Emyx is an ealry-stage operating system with a kernel and libc written from scra
 - [x] IRQ0 timer ticks (PIT configured)
 - [x] IRQ1 keyboard press decoding
 - [x] Kernel shell with utility commands (help, clear, ticks, irq, panic, reboot)
+- [x] Physical memory managment
+- [x] Virtual memory managment (identity paging)
+- [x] Basic kernel heap allocator (`kmalloc`, `kfree`)
 
 ## Prerequisites
 
