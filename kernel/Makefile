@@ -32,6 +32,7 @@ main.o \
 interrupt.o \
 shell.o \
 timer.o \
+sched.o \
 mm/pmm.o \
 mm/vmm.o \
 mm/kmalloc.o \

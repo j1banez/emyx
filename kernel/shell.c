@@ -6,6 +6,7 @@
 #include <kernel/kmalloc.h>
 #include <kernel/pmm.h>
 #include <kernel/printk.h>
+#include <kernel/sched.h>
 #include <kernel/shell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
@@ -27,6 +28,7 @@ static void cmd_reboot(void);
 static void cmd_pagefault(void);
 static void cmd_vmmtest(void);
 static void cmd_heaptest(void);
+static void cmd_schedtest(void);
 
 static char buffer[128];
 static uint32_t length;
@@ -41,6 +43,7 @@ static const shell_cmd commands[] = {
     { "pagefault", "Trigger page fault", cmd_pagefault },
     { "vmmtest", "Run VMM smoke test", cmd_vmmtest },
     { "heaptest", "Run heap smoke test", cmd_heaptest },
+    { "schedtest", "Run scheduler smoke test", cmd_schedtest },
 };
 
 void shell_init(void)
@@ -220,4 +223,24 @@ static void cmd_heaptest(void)
 
     kfree(b);
     kfree(c);
+}
+
+static void cmd_schedtest(void)
+{
+    int task_a;
+    int task_b;
+
+    sched_init();
+
+    task_a = kthread_create(cmd_ticks);
+    task_b = kthread_create(cmd_irq);
+    printk("schedtest: task_a=%x task_b=%x\n", task_a, task_b);
+
+    if (task_a < 0 || task_b < 0) {
+        printk("schedtest: failed to create test tasks\n");
+        return;
+    }
+
+    sched_yield();
+    sched_yield();
 }
