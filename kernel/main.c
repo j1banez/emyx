@@ -6,6 +6,7 @@
 #include <kernel/pmm.h>
 #include <kernel/printk.h>
 #include <kernel/serial.h>
+#include <kernel/sched.h>
 #include <kernel/shell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
@@ -25,6 +26,7 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
     pmm_init((void *)(uintptr_t)mbi_addr);
     vmm_init(VMM_BOOTSTRAP_LIMIT);
     arch_init();
+    sched_init();
     shell_init();
     irq_enable();
 

@@ -64,6 +64,8 @@ int kthread_create(void (*entry)(void))
     if (!initialized)
         sched_init();
 
+    reap_zombies();
+
     for (uint32_t i = 1; i < MAX_TASKS; i++) {
         if (tasks[i].state != TASK_UNUSED)
             continue;
@@ -79,8 +81,6 @@ int kthread_create(void (*entry)(void))
         tasks[i].stack = stack;
         tasks[i].entry = entry;
 
-        printk("sched: created task id=%u slot=%u stack=%x\n",
-            tasks[i].id, i, stack);
         return (int)tasks[i].id;
     }
 
@@ -112,9 +112,6 @@ void sched_yield(void)
 
         if (tasks[idx].state != TASK_RUNNABLE)
             continue;
-
-        printk("sched: switch current=%u to next=%u\n",
-            tasks[current_task].id, tasks[idx].id);
 
         old_task = current_task;
         if (tasks[current_task].state == TASK_RUNNING)
