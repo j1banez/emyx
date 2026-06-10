@@ -20,3 +20,11 @@ gdt_flush:
 
 gdt_flush_done:
   ret
+
+.global tss_flush
+.type tss_flush, @function
+
+tss_flush:
+  movw 4(%esp), %ax
+  ltr %ax
+  ret
