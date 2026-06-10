@@ -70,6 +70,9 @@ static uint32_t *vmm_get_page_table(uintptr_t vaddr)
 
 int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags)
 {
+    uint32_t *pd_ptr;
+    uint32_t pd_idx;
+
     // Check that addresses are page aligned
     if ((vaddr & (PMM_PAGE_SIZE - 1)) != 0)
         return -1;
@@ -80,6 +83,10 @@ int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags)
 
     if (pt_ptr == 0)
         return -1;
+
+    pd_ptr = (uint32_t *)page_directory;
+    pd_idx = VMM_PDE_INDEX(vaddr);
+    pd_ptr[pd_idx] |= flags & 0xfff;
 
     pt_ptr[VMM_PTE_INDEX(vaddr)] = paddr | (flags & 0xfff);
     paging_tlb_invalidate(vaddr);

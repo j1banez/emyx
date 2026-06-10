@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+#include "gdt.h"
 #include "idt.h"
 
 #define DECLARE_EX(n) extern void ex##n(void)
@@ -56,6 +57,7 @@ DECLARE_IRQ(14);
 DECLARE_IRQ(15);
 
 extern void isr_stub(void);
+extern void syscall_stub(void);
 
 static idt_descriptor idt[256];
 static idt_ptr idtr = {0, 0};
@@ -90,18 +92,23 @@ static idt_descriptor new_descriptor(
 void idt_init()
 {
     for (int i = 0; i < 256; i++) {
-        idt[i] = new_descriptor((uint32_t)isr_stub, 0x08, 0x8E);
+        idt[i] = new_descriptor((uint32_t)isr_stub, GDT_KERNEL_CODE, 0x8E);
     }
 
     // Register exceptions
     for (int i = 0; i < 32; i++) {
-        idt[i] = new_descriptor((uint32_t)exception_table[i], 0x08, 0x8E);
+        idt[i] = new_descriptor((uint32_t)exception_table[i],
+            GDT_KERNEL_CODE, 0x8E);
     }
 
     // Register hardware interrupts
     for (int i = 0; i < 16; i++) {
-        idt[i + 32] = new_descriptor((uint32_t)irq_table[i], 0x08, 0x8E);
+        idt[i + 32] = new_descriptor((uint32_t)irq_table[i],
+            GDT_KERNEL_CODE, 0x8E);
     }
+
+    idt[0x80] = new_descriptor((uint32_t)syscall_stub,
+        GDT_KERNEL_CODE, 0xEE);
 
     idtr.base = (uint32_t)idt;
     idtr.limit = sizeof(idt) - 1;

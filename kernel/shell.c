@@ -10,6 +10,7 @@
 #include <kernel/shell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
+#include <kernel/user.h>
 #include <kernel/vmm.h>
 
 typedef struct {
@@ -28,6 +29,7 @@ static void cmd_reboot(void);
 static void cmd_pagefault(void);
 static void cmd_vmmtest(void);
 static void cmd_heaptest(void);
+static void cmd_usertest(void);
 static void cmd_newtask(void);
 static void cmd_yield(void);
 static void test_task(void);
@@ -45,6 +47,7 @@ static const shell_cmd commands[] = {
     { "pagefault", "Trigger page fault", cmd_pagefault },
     { "vmmtest", "Run VMM smoke test", cmd_vmmtest },
     { "heaptest", "Run heap smoke test", cmd_heaptest },
+    { "usertest", "Enter ring 3 and run syscall smoke test", cmd_usertest },
     { "newtask", "Create one scheduler test task", cmd_newtask },
     { "yield", "Yield to the next runnable task", cmd_yield },
 };
@@ -226,6 +229,12 @@ static void cmd_heaptest(void)
 
     kfree(b);
     kfree(c);
+}
+
+static void cmd_usertest(void)
+{
+    printk("Entering ring 3 syscall test...\n");
+    user_enter_syscall_test();
 }
 
 static void cmd_newtask(void)

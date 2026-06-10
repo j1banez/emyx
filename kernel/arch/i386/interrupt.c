@@ -57,6 +57,17 @@ void i386_ex_handler(ex_frame *frame)
         .value = frame->cs,
     };
 
+    if ((frame->cs & 0x3) != 0) {
+        report.extras[report.extra_count++] = (ex_extra){
+            .name = "USER_ESP",
+            .value = frame->user_esp,
+        };
+        report.extras[report.extra_count++] = (ex_extra){
+            .name = "USER_SS",
+            .value = frame->user_ss,
+        };
+    }
+
     if (frame->vector == 14) {
         uint32_t error = frame->error_code;
 

@@ -2,6 +2,7 @@
 
 .extern i386_ex_handler
 .extern irq_handler
+.extern syscall_handler
 
 .macro EX_ERR n
 .global ex\n
@@ -53,6 +54,16 @@ isr_stub:
 1:
     hlt
     jmp 1b
+
+.global syscall_stub
+.type syscall_stub, @function
+syscall_stub:
+    pusha
+    push 28(%esp)
+    call syscall_handler
+    add $4, %esp
+    popa
+    iret
 
 EX_NOERR 0
 EX_NOERR 1
