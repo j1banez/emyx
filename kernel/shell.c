@@ -29,7 +29,7 @@ static void cmd_reboot(void);
 static void cmd_pagefault(void);
 static void cmd_vmmtest(void);
 static void cmd_heaptest(void);
-static void cmd_usertest(void);
+static void cmd_userinit(void);
 static void cmd_newtask(void);
 static void cmd_yield(void);
 static void test_task(void);
@@ -47,7 +47,7 @@ static const shell_cmd commands[] = {
     { "pagefault", "Trigger page fault", cmd_pagefault },
     { "vmmtest", "Run VMM smoke test", cmd_vmmtest },
     { "heaptest", "Run heap smoke test", cmd_heaptest },
-    { "usertest", "Enter ring 3 and run syscall smoke test", cmd_usertest },
+    { "userinit", "Run embedded user init program", cmd_userinit },
     { "newtask", "Create one scheduler test task", cmd_newtask },
     { "yield", "Yield to the next runnable task", cmd_yield },
 };
@@ -231,10 +231,10 @@ static void cmd_heaptest(void)
     kfree(c);
 }
 
-static void cmd_usertest(void)
+static void cmd_userinit(void)
 {
-    printk("Entering ring 3 syscall test...\n");
-    user_enter_syscall_test();
+    printk("Running embedded user init...\n");
+    user_run_init();
 }
 
 static void cmd_newtask(void)

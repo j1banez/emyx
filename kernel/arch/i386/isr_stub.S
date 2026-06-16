@@ -2,7 +2,7 @@
 
 .extern i386_ex_handler
 .extern irq_handler
-.extern syscall_handler
+.extern syscall_dispatch
 
 .macro EX_ERR n
 .global ex\n
@@ -59,9 +59,10 @@ isr_stub:
 .type syscall_stub, @function
 syscall_stub:
     pusha
-    push 28(%esp)
-    call syscall_handler
+    push %esp
+    call syscall_dispatch
     add $4, %esp
+    mov %eax, 28(%esp)
     popa
     iret
 

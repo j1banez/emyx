@@ -1,7 +1,8 @@
+#include <stddef.h>
 #include <stdint.h>
 
 #include <kernel/pmm.h>
-#include <kernel/printk.h>
+#include <kernel/syscall.h>
 #include <kernel/user.h>
 #include <kernel/vmm.h>
 
@@ -10,13 +11,15 @@
 #define USER_SELECTOR_RPL 0x3
 #define USER_CODE_SELECTOR (GDT_USER_CODE | USER_SELECTOR_RPL)
 #define USER_DATA_SELECTOR (GDT_USER_DATA | USER_SELECTOR_RPL)
-#define USER_TEST_STACK_SIZE 4096u
+#define USER_INIT_STACK_SIZE 4096u
 #define PAGE_MASK (~(uintptr_t)(PMM_PAGE_SIZE - 1))
 
-static uint8_t user_test_stack[USER_TEST_STACK_SIZE]
+static uint8_t user_init_stack[USER_INIT_STACK_SIZE]
     __attribute__((aligned(PMM_PAGE_SIZE)));
 
-static void map_user_test_page(uintptr_t vaddr, uint32_t flags)
+static const char init_message[] = "hello from user init\n";
+
+static void map_user_page(uintptr_t vaddr, uint32_t flags)
 {
     uintptr_t page = vaddr & PAGE_MASK;
     uintptr_t paddr;
@@ -27,12 +30,22 @@ static void map_user_test_page(uintptr_t vaddr, uint32_t flags)
     vmm_map_page(page, paddr & PAGE_MASK, flags);
 }
 
-void syscall_handler(uint32_t number)
+static uint32_t user_syscall3(uint32_t number, uint32_t arg0,
+    uint32_t arg1, uint32_t arg2)
 {
-    printk("syscall: number=%x\n", number);
+    uint32_t ret;
+
+    __asm__ volatile (
+        "int $0x80"
+        : "=a" (ret)
+        : "a" (number), "b" (arg0), "c" (arg1), "d" (arg2)
+        : "memory"
+    );
+
+    return ret;
 }
 
-static void user_test_entry(void)
+static void user_init_entry(void)
 {
     __asm__ volatile (
         "movw %[data], %%ax\n"
@@ -45,24 +58,25 @@ static void user_test_entry(void)
         : "ax", "memory"
     );
 
-    __asm__ volatile ("int $0x80" : : "a" (1) : "memory");
-
-    volatile uint32_t *bad = (volatile uint32_t *)VMM_BOOTSTRAP_LIMIT;
-    volatile uint32_t value = *bad;
-    (void)value;
+    user_syscall3(SYS_WRITE, SYS_FD_STDOUT, (uint32_t)init_message,
+        sizeof(init_message) - 1);
+    user_syscall3(SYS_EXIT, 0, 0, 0);
 
     for (;;)
         ;
 }
 
-void user_enter_syscall_test(void)
+void user_run_init(void)
 {
-    uint32_t user_stack = (uint32_t)(user_test_stack + USER_TEST_STACK_SIZE);
+    uint32_t user_stack = (uint32_t)(user_init_stack + USER_INIT_STACK_SIZE);
     uint32_t eflags;
 
-    map_user_test_page((uintptr_t)user_test_entry,
+    /* Temporary: embedded user code still lives in the kernel image. */
+    map_user_page((uintptr_t)user_init_entry,
         VMM_PAGE_PRESENT | VMM_PAGE_USER);
-    map_user_test_page((uintptr_t)user_test_stack,
+    map_user_page((uintptr_t)init_message,
+        VMM_PAGE_PRESENT | VMM_PAGE_USER);
+    map_user_page((uintptr_t)user_init_stack,
         VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE | VMM_PAGE_USER);
 
     __asm__ volatile ("pushf; pop %0" : "=r" (eflags));
@@ -80,7 +94,7 @@ void user_enter_syscall_test(void)
           [user_esp] "r" (user_stack),
           [eflags] "r" (eflags),
           [user_cs] "i" (USER_CODE_SELECTOR),
-          [user_eip] "r" ((uint32_t)user_test_entry)
+          [user_eip] "r" ((uint32_t)user_init_entry)
         : "memory"
     );
 
