@@ -3,6 +3,7 @@
 
 #include <kernel/printk.h>
 #include <kernel/syscall.h>
+#include <kernel/user.h>
 
 static uint32_t sys_write(uint32_t fd, const char *buf, uint32_t len);
 static void sys_exit(uint32_t status);
@@ -42,6 +43,7 @@ static uint32_t sys_write(uint32_t fd, const char *buf, uint32_t len)
 
 static void sys_exit(uint32_t status)
 {
+    user_exit_current(status);
     printk("user: exited status=%x\n", status);
 
     for (;;)

@@ -34,6 +34,7 @@ shell.o \
 timer.o \
 sched.o \
 syscall.o \
+user.o \
 mm/pmm.o \
 mm/vmm.o \
 mm/kmalloc.o \
