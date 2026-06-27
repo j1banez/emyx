@@ -46,9 +46,13 @@ size_t user_init_code_size(void)
 void user_enter(user_process *process)
 {
     uint32_t eflags;
+    uintptr_t kernel_stack;
 
     if (process == NULL)
         return;
+
+    __asm__ volatile ("mov %%esp, %0" : "=r" (kernel_stack));
+    tss_set_kernel_stack(kernel_stack);
 
     __asm__ volatile ("pushf; pop %0" : "=r" (eflags));
     eflags |= 0x200;

@@ -233,8 +233,13 @@ static void cmd_heaptest(void)
 
 static void cmd_userinit(void)
 {
-    printk("Running embedded user init...\n");
-    user_run_init();
+    int task;
+
+    task = kthread_create(user_run_init);
+    printk("userinit: task=%x\n", task);
+
+    if (task < 0)
+        printk("userinit: failed to create init task\n");
 }
 
 static void cmd_newtask(void)

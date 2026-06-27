@@ -26,5 +26,6 @@ typedef struct {
 void gdt_init(void);
 void gdt_flush(gdt_ptr *gdtr);
 void tss_flush(uint16_t selector);
+void tss_set_kernel_stack(uintptr_t stack);
 
 #endif

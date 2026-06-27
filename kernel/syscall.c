@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include <kernel/printk.h>
+#include <kernel/sched.h>
 #include <kernel/syscall.h>
 #include <kernel/user.h>
 
@@ -46,6 +47,5 @@ static void sys_exit(uint32_t status)
     user_exit_current(status);
     printk("user: exited status=%x\n", status);
 
-    for (;;)
-        ;
+    kthread_exit();
 }
