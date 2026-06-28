@@ -8,6 +8,7 @@
 
 static uint32_t sys_write(uint32_t fd, const char *buf, uint32_t len);
 static void sys_exit(uint32_t status);
+static uint32_t sys_yield(void);
 
 /*
  * int $0x80 syscall ABI:
@@ -24,6 +25,8 @@ uint32_t syscall_dispatch(struct syscall_frame *frame)
     case SYS_EXIT:
         sys_exit(frame->ebx);
         return SYS_ERR;
+    case SYS_YIELD:
+        return sys_yield();
     default:
         return SYS_ERR;
     }
@@ -48,4 +51,10 @@ static void sys_exit(uint32_t status)
     printk("user: exited status=%x\n", status);
 
     kthread_exit();
+}
+
+static uint32_t sys_yield(void)
+{
+    sched_yield();
+    return 0;
 }
