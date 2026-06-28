@@ -9,6 +9,12 @@
 #define USER_INIT_DATA_ADDR 0x00401000u
 #define USER_INIT_STACK_TOP 0x00800000u
 #define USER_INIT_MESSAGE_LEN 21u
+#define USER_PROCESS_MAX_PAGES 16u
+
+typedef struct {
+    uintptr_t vaddr;
+    uintptr_t paddr;
+} user_page;
 
 typedef struct {
     uint32_t id;
@@ -16,6 +22,8 @@ typedef struct {
     uint32_t stack_top;
     uint32_t exit_status;
     uint8_t exited;
+    user_page pages[USER_PROCESS_MAX_PAGES];
+    uint32_t page_count;
 } user_process;
 
 void user_run_init(void);

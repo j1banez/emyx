@@ -12,11 +12,30 @@ static user_process init_process;
 static user_process *current_process;
 static uint32_t next_process_id;
 
-static int map_copied_user_page(uintptr_t vaddr, const void *src, size_t size,
-    uint32_t flags)
+static void user_process_free_pages(user_process *process)
+{
+    uint32_t i;
+
+    if (process == NULL)
+        return;
+
+    for (i = 0; i < process->page_count; i++) {
+        vmm_unmap_page(process->pages[i].vaddr);
+        pmm_free_page(process->pages[i].paddr);
+        process->pages[i].vaddr = 0;
+        process->pages[i].paddr = 0;
+    }
+
+    process->page_count = 0;
+}
+
+static int map_copied_user_page(user_process *process, uintptr_t vaddr,
+    const void *src, size_t size, uint32_t flags)
 {
     uintptr_t paddr;
 
+    if (process == NULL || process->page_count >= USER_PROCESS_MAX_PAGES)
+        return -1;
     if (size > PMM_PAGE_SIZE)
         return -1;
 
@@ -37,6 +56,10 @@ static int map_copied_user_page(uintptr_t vaddr, const void *src, size_t size,
         pmm_free_page(paddr);
         return -1;
     }
+
+    process->pages[process->page_count].vaddr = vaddr;
+    process->pages[process->page_count].paddr = paddr;
+    process->page_count++;
 
     return 0;
 }
@@ -62,6 +85,7 @@ user_process *user_process_create(void)
     init_process.stack_top = 0;
     init_process.exit_status = 0;
     init_process.exited = 0;
+    init_process.page_count = 0;
 
     current_process = &init_process;
     return current_process;
@@ -77,20 +101,24 @@ int user_prepare_init(user_process *process)
     if (process == NULL)
         return -1;
 
-    if (map_copied_user_page(USER_INIT_CODE_ADDR, user_init_code(),
+    if (map_copied_user_page(process, USER_INIT_CODE_ADDR, user_init_code(),
             user_init_code_size(), 0) != 0)
-        return -1;
-    if (map_copied_user_page(USER_INIT_DATA_ADDR, init_message,
+        goto fail;
+    if (map_copied_user_page(process, USER_INIT_DATA_ADDR, init_message,
             USER_INIT_MESSAGE_LEN + 1, 0) != 0)
-        return -1;
-    if (map_copied_user_page(USER_INIT_STACK_TOP - PMM_PAGE_SIZE, NULL, 0,
-            VMM_PAGE_WRITABLE) != 0)
-        return -1;
+        goto fail;
+    if (map_copied_user_page(process, USER_INIT_STACK_TOP - PMM_PAGE_SIZE,
+            NULL, 0, VMM_PAGE_WRITABLE) != 0)
+        goto fail;
 
     process->entry = USER_INIT_CODE_ADDR;
     process->stack_top = USER_INIT_STACK_TOP;
 
     return 0;
+
+fail:
+    user_process_free_pages(process);
+    return -1;
 }
 
 void user_exit_current(uint32_t status)
@@ -100,4 +128,5 @@ void user_exit_current(uint32_t status)
 
     current_process->exit_status = status;
     current_process->exited = 1;
+    user_process_free_pages(current_process);
 }
