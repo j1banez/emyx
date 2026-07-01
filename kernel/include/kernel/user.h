@@ -34,8 +34,6 @@ void user_run_init(void);
 user_process *user_process_create(void);
 user_process *user_current_process(void);
 int user_prepare_init(user_process *process);
-const void *user_init_image(void);
-size_t user_init_image_size(void);
 void user_enter(user_process *process);
 void user_exit_current(uint32_t status);
 

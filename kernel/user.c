@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <kernel/boot.h>
 #include <kernel/pmm.h>
 #include <kernel/user.h>
 #include <kernel/vmm.h>
@@ -143,7 +144,7 @@ int user_prepare_init(user_process *process)
     if (process == NULL)
         return -1;
 
-    if (load_emxf(process, user_init_image(), user_init_image_size()) != 0)
+    if (load_emxf(process, boot_module_start(), boot_module_size()) != 0)
         goto fail;
     if (map_copied_user_page(process, USER_INIT_DATA_ADDR, init_message,
             USER_INIT_MESSAGE_LEN + 1, 0) != 0)

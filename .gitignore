@@ -1,6 +1,9 @@
 *.iso
 isodir
 sysroot
+user/*.d
+user/*.o
+user/*.emxf
 
 # clangd LSP
 compile_commands.json
