@@ -8,13 +8,17 @@
 #define USER_SELECTOR_RPL 0x3
 #define USER_CODE_SELECTOR (GDT_USER_CODE | USER_SELECTOR_RPL)
 #define USER_DATA_SELECTOR (GDT_USER_DATA | USER_SELECTOR_RPL)
+#define INIT_CODE_SIZE 49u
 #define U32LE(value) \
     (uint8_t)((value) & 0xff), \
     (uint8_t)(((value) >> 8) & 0xff), \
     (uint8_t)(((value) >> 16) & 0xff), \
     (uint8_t)(((value) >> 24) & 0xff)
 
-static const uint8_t init_code[] = {
+static const uint8_t init_image[] = {
+    EMXF_MAGIC0, EMXF_MAGIC1, EMXF_MAGIC2, EMXF_MAGIC3,
+    U32LE(INIT_CODE_SIZE),                       /* code size */
+    U32LE(0u),                                   /* entry offset */
     0x66, 0xb8, USER_DATA_SELECTOR, 0x00,       /* mov ax, user data */
     0x8e, 0xd8,                                 /* mov ds, ax */
     0x8e, 0xc0,                                 /* mov es, ax */
@@ -33,14 +37,14 @@ static const uint8_t init_code[] = {
     0xeb, 0xfe,                                 /* jmp . */
 };
 
-const void *user_init_code(void)
+const void *user_init_image(void)
 {
-    return init_code;
+    return init_image;
 }
 
-size_t user_init_code_size(void)
+size_t user_init_image_size(void)
 {
-    return sizeof(init_code);
+    return sizeof(init_image);
 }
 
 void user_enter(user_process *process)

@@ -64,6 +64,48 @@ static int map_copied_user_page(user_process *process, uintptr_t vaddr,
     return 0;
 }
 
+static uint32_t read_le32(const uint8_t *bytes)
+{
+    return (uint32_t)bytes[0]
+        | ((uint32_t)bytes[1] << 8)
+        | ((uint32_t)bytes[2] << 16)
+        | ((uint32_t)bytes[3] << 24);
+}
+
+static int load_emxf(user_process *process, const void *image, size_t size)
+{
+    const uint8_t *bytes;
+    const uint8_t *code;
+    uint32_t code_size;
+    uint32_t entry_offset;
+
+    if (process == NULL || image == NULL || size < EMXF_HEADER_SIZE)
+        return -1;
+
+    bytes = (const uint8_t *)image;
+    if (bytes[0] != EMXF_MAGIC0 || bytes[1] != EMXF_MAGIC1 ||
+            bytes[2] != EMXF_MAGIC2 || bytes[3] != EMXF_MAGIC3)
+        return -1;
+    code_size = read_le32(bytes + 4);
+    entry_offset = read_le32(bytes + 8);
+
+    if (code_size > PMM_PAGE_SIZE)
+        return -1;
+    if (entry_offset >= code_size)
+        return -1;
+    if (EMXF_HEADER_SIZE + code_size > size)
+        return -1;
+
+    code = bytes + EMXF_HEADER_SIZE;
+    if (map_copied_user_page(process, USER_INIT_CODE_ADDR, code,
+            code_size, 0) != 0)
+        return -1;
+
+    process->entry = USER_INIT_CODE_ADDR + entry_offset;
+
+    return 0;
+}
+
 void user_run_init(void)
 {
     user_process *process;
@@ -101,8 +143,7 @@ int user_prepare_init(user_process *process)
     if (process == NULL)
         return -1;
 
-    if (map_copied_user_page(process, USER_INIT_CODE_ADDR, user_init_code(),
-            user_init_code_size(), 0) != 0)
+    if (load_emxf(process, user_init_image(), user_init_image_size()) != 0)
         goto fail;
     if (map_copied_user_page(process, USER_INIT_DATA_ADDR, init_message,
             USER_INIT_MESSAGE_LEN + 1, 0) != 0)
@@ -111,7 +152,6 @@ int user_prepare_init(user_process *process)
             NULL, 0, VMM_PAGE_WRITABLE) != 0)
         goto fail;
 
-    process->entry = USER_INIT_CODE_ADDR;
     process->stack_top = USER_INIT_STACK_TOP;
 
     return 0;

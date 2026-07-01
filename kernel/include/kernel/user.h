@@ -2,7 +2,6 @@
 #define _KERNEL_USER_H
 
 #include <stdint.h>
-
 #include <stddef.h>
 
 #define USER_INIT_CODE_ADDR 0x00400000u
@@ -10,6 +9,11 @@
 #define USER_INIT_STACK_TOP 0x00800000u
 #define USER_INIT_MESSAGE_LEN 21u
 #define USER_PROCESS_MAX_PAGES 16u
+#define EMXF_HEADER_SIZE 12u
+#define EMXF_MAGIC0 'E'
+#define EMXF_MAGIC1 'M'
+#define EMXF_MAGIC2 'X'
+#define EMXF_MAGIC3 'F'
 
 typedef struct {
     uintptr_t vaddr;
@@ -30,8 +34,8 @@ void user_run_init(void);
 user_process *user_process_create(void);
 user_process *user_current_process(void);
 int user_prepare_init(user_process *process);
-const void *user_init_code(void);
-size_t user_init_code_size(void);
+const void *user_init_image(void);
+size_t user_init_image_size(void);
 void user_enter(user_process *process);
 void user_exit_current(uint32_t status);
 
