@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include <kernel/arch.h>
+#include <kernel/boot.h>
 #include <kernel/interrupt.h>
 #include <kernel/kmalloc.h>
 #include <kernel/pmm.h>
@@ -29,6 +30,7 @@ static void cmd_reboot(void);
 static void cmd_pagefault(void);
 static void cmd_vmmtest(void);
 static void cmd_heaptest(void);
+static void cmd_initramfs(void);
 static void cmd_userinit(void);
 static void cmd_newtask(void);
 static void cmd_yield(void);
@@ -47,6 +49,7 @@ static const shell_cmd commands[] = {
     { "pagefault", "Trigger page fault", cmd_pagefault },
     { "vmmtest", "Run VMM smoke test", cmd_vmmtest },
     { "heaptest", "Run heap smoke test", cmd_heaptest },
+    { "initramfs", "Show first boot module", cmd_initramfs },
     { "userinit", "Run embedded user init program", cmd_userinit },
     { "newtask", "Create one scheduler test task", cmd_newtask },
     { "yield", "Yield to the next runnable task", cmd_yield },
@@ -229,6 +232,24 @@ static void cmd_heaptest(void)
 
     kfree(b);
     kfree(c);
+}
+
+static void cmd_initramfs(void)
+{
+    const char *data;
+    uint32_t size;
+
+    data = boot_module_start();
+    size = boot_module_size();
+
+    if (data == NULL || size == 0) {
+        printk("initramfs: no module\n");
+        return;
+    }
+
+    printk("initramfs: size=%x data=", size);
+    for (uint32_t i = 0; i < size; i++)
+        printk("%c", data[i]);
 }
 
 static void cmd_userinit(void)

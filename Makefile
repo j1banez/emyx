@@ -85,7 +85,8 @@ build: headers
 iso: build
 	mkdir -p isodir/boot/grub
 	cp "$(SYSROOT)/boot/emyx.kernel" isodir/boot/emyx.kernel
-	printf '%s\n' 'menuentry "emyx" {' '  multiboot /boot/emyx.kernel' '}' > isodir/boot/grub/grub.cfg
+	cp boot/initramfs.emx isodir/boot/initramfs.emx
+	cp boot/grub.cfg isodir/boot/grub/grub.cfg
 	grub-mkrescue -o emyx.iso isodir
 
 run: iso

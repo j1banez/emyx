@@ -1,31 +1,10 @@
+#include <kernel/boot.h>
 #include <kernel/panic.h>
 #include <kernel/pmm.h>
 #include <kernel/printk.h>
 
-#define MULTIBOOT_FLAG_MMAP (1u << 6)
-
 extern uint8_t __kernel_start[];
 extern uint8_t __kernel_end[];
-
-typedef struct {
-    uint32_t flags;
-    uint32_t mem_lower;
-    uint32_t mem_upper;
-    uint32_t boot_device;
-    uint32_t cmdline;
-    uint32_t mods_count;
-    uint32_t mods_addr;
-    uint32_t syms[4];
-    uint32_t mmap_length;
-    uint32_t mmap_addr;
-} multiboot_info;
-
-typedef struct {
-    uint32_t size;
-    uint64_t addr;
-    uint64_t len;
-    uint32_t type;
-} __attribute__((packed)) multiboot_mmap_entry;
 
 static uint8_t *pmm_bitmap;
 static uint32_t pmm_bitmap_bytes;
@@ -278,10 +257,8 @@ static void check_kernel_location(multiboot_info *mbi)
         panic("pmm: kernel not fully located in usable RAM");
 }
 
-void pmm_init(void *mbi_ptr)
+void pmm_init(multiboot_info *mbi)
 {
-    multiboot_info *mbi = (multiboot_info *)mbi_ptr;
-
     check_mmap(mbi);
     pmm_max_page = find_max_page(mbi);
     pmm_bitmap_bytes = (pmm_max_page + 7) / 8;

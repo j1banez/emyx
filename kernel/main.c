@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include <kernel/arch.h>
+#include <kernel/boot.h>
 #include <kernel/interrupt.h>
 #include <kernel/panic.h>
 #include <kernel/pmm.h>
@@ -12,10 +13,10 @@
 #include <kernel/tty.h>
 #include <kernel/vmm.h>
 
-#define MULTIBOOT_MAGIC 0x2badb002
-
 void kmain(uint32_t magic, uint32_t mbi_addr)
 {
+    multiboot_info *mbi;
+
     serial_init();
     terminal_init();
 
@@ -23,7 +24,10 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
         panic("multiboot: wrong magic value\n");
     }
 
-    pmm_init((void *)(uintptr_t)mbi_addr);
+    mbi = (multiboot_info *)(uintptr_t)mbi_addr;
+
+    pmm_init(mbi);
+    boot_init(mbi);
     vmm_init(VMM_BOOTSTRAP_LIMIT);
     arch_init();
     sched_init();

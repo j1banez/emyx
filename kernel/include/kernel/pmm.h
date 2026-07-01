@@ -3,10 +3,12 @@
 
 #include <stdint.h>
 
+#include <kernel/boot.h>
+
 #define PMM_PAGE_SHIFT 12u
 #define PMM_PAGE_SIZE (1u << PMM_PAGE_SHIFT)
 
-void pmm_init(void *mbi_ptr);
+void pmm_init(multiboot_info *mbi);
 uint32_t pmm_get_total_pages(void);
 uint32_t pmm_get_free_pages(void);
 uintptr_t pmm_alloc_page(void);
