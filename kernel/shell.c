@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include <kernel/arch.h>
-#include <kernel/boot.h>
+#include <kernel/initramfs.h>
 #include <kernel/interrupt.h>
 #include <kernel/kmalloc.h>
 #include <kernel/pmm.h>
@@ -236,27 +236,14 @@ static void cmd_heaptest(void)
 
 static void cmd_initramfs(void)
 {
-    const char *data;
-    uint32_t size;
-
-    data = boot_module_start();
-    size = boot_module_size();
-
-    if (data == NULL || size == 0) {
-        printk("initramfs: no module\n");
-        return;
-    }
-
-    printk("initramfs: size=%x data=", size);
-    for (uint32_t i = 0; i < size; i++)
-        printk("%c", data[i]);
+    initramfs_list();
 }
 
 static void cmd_userinit(void)
 {
     int task;
 
-    task = kthread_create(user_run_init);
+    task = kthread_create(user_init);
     printk("userinit: task=%x\n", task);
 
     if (task < 0)

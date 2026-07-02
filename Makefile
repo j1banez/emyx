@@ -83,14 +83,17 @@ build: headers
 		$(MAKE) -C "$$project" DESTDIR="$(SYSROOT)" $(SUBMAKE_VARS) install; \
 	done
 
-user/init.emxf: user/init.S
-	$(CC_BASE) -MD -c $< -o user/init.o -ffreestanding -Wall -Wextra
-	$(OBJCOPY) -O binary -j .text user/init.o $@
+user/%.emxf: user/%.S
+	$(CC_BASE) -MD -c $< -o user/$*.o -ffreestanding -Wall -Wextra
+	$(OBJCOPY) -O binary -j .text user/$*.o $@
 
-iso: build user/init.emxf
+user/initramfs.emxa: user/init.emxf user/hello.emxf scripts/mkemxa.py
+	python3 scripts/mkemxa.py $@ /bin/init user/init.emxf /bin/hello user/hello.emxf
+
+iso: build user/initramfs.emxa
 	mkdir -p isodir/boot/grub
 	cp "$(SYSROOT)/boot/emyx.kernel" isodir/boot/emyx.kernel
-	cp user/init.emxf isodir/boot/init.emxf
+	cp user/initramfs.emxa isodir/boot/initramfs.emxa
 	cp boot/grub.cfg isodir/boot/grub/grub.cfg
 	grub-mkrescue -o emyx.iso isodir
 
@@ -104,5 +107,5 @@ clean:
 	@for project in $(PROJECTS); do \
 		$(MAKE) -C "$$project" clean; \
 	done
-	rm -f user/init.o user/init.d user/init.emxf
+	rm -f user/*.o user/*.d user/*.emxf user/*.emxa
 	rm -rf "$(SYSROOT)" isodir emyx.iso

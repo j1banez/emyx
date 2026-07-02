@@ -35,10 +35,12 @@ shell.o \
 timer.o \
 sched.o \
 syscall.o \
+initramfs.o \
 user.o \
 mm/pmm.o \
 mm/vmm.o \
 mm/kmalloc.o \
+lib/endian.o \
 lib/panic.o \
 lib/printk.o \
 

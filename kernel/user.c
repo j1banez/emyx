@@ -2,7 +2,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <kernel/boot.h>
+#include <kernel/endian.h>
+#include <kernel/initramfs.h>
 #include <kernel/pmm.h>
 #include <kernel/user.h>
 #include <kernel/vmm.h>
@@ -65,14 +66,6 @@ static int map_copied_user_page(user_process *process, uintptr_t vaddr,
     return 0;
 }
 
-static uint32_t read_le32(const uint8_t *bytes)
-{
-    return (uint32_t)bytes[0]
-        | ((uint32_t)bytes[1] << 8)
-        | ((uint32_t)bytes[2] << 16)
-        | ((uint32_t)bytes[3] << 24);
-}
-
 static int load_emxf(user_process *process, const void *image, size_t size)
 {
     const uint8_t *bytes;
@@ -107,7 +100,7 @@ static int load_emxf(user_process *process, const void *image, size_t size)
     return 0;
 }
 
-void user_run_init(void)
+void user_init(void)
 {
     user_process *process;
 
@@ -141,10 +134,15 @@ user_process *user_current_process(void)
 
 int user_prepare_init(user_process *process)
 {
+    const void *image;
+    uint32_t image_size;
+
     if (process == NULL)
         return -1;
 
-    if (load_emxf(process, boot_module_start(), boot_module_size()) != 0)
+    if (initramfs_find("/bin/init", &image, &image_size) != 0)
+        goto fail;
+    if (load_emxf(process, image, image_size) != 0)
         goto fail;
     if (map_copied_user_page(process, USER_INIT_DATA_ADDR, init_message,
             USER_INIT_MESSAGE_LEN + 1, 0) != 0)

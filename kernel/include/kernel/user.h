@@ -30,7 +30,7 @@ typedef struct {
     uint32_t page_count;
 } user_process;
 
-void user_run_init(void);
+void user_init(void);
 user_process *user_process_create(void);
 user_process *user_current_process(void);
 int user_prepare_init(user_process *process);

@@ -4,6 +4,7 @@ sysroot
 user/*.d
 user/*.o
 user/*.emxf
+user/*.emxa
 
 # clangd LSP
 compile_commands.json

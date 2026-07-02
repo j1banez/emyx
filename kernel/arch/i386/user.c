@@ -7,6 +7,7 @@
 #define USER_SELECTOR_RPL 0x3
 #define USER_CODE_SELECTOR (GDT_USER_CODE | USER_SELECTOR_RPL)
 #define USER_DATA_SELECTOR (GDT_USER_DATA | USER_SELECTOR_RPL)
+
 void user_enter(user_process *process)
 {
     uint32_t eflags;
