@@ -56,6 +56,7 @@ char keyboard_decode(uint8_t scancode)
         case 0x30: return 'b';
         case 0x31: return 'n';
         case 0x32: return 'm';
+        case 0x35: return '/';
 
         case 0x39: return ' ';
 

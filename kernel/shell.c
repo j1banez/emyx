@@ -31,10 +31,8 @@ static void cmd_pagefault(void);
 static void cmd_vmmtest(void);
 static void cmd_heaptest(void);
 static void cmd_initramfs(void);
-static void cmd_userinit(void);
-static void cmd_newtask(void);
+static void cmd_userspawn(void);
 static void cmd_yield(void);
-static void test_task(void);
 
 static char buffer[128];
 static uint32_t length;
@@ -50,8 +48,7 @@ static const shell_cmd commands[] = {
     { "vmmtest", "Run VMM smoke test", cmd_vmmtest },
     { "heaptest", "Run heap smoke test", cmd_heaptest },
     { "initramfs", "Show first boot module", cmd_initramfs },
-    { "userinit", "Run embedded user init program", cmd_userinit },
-    { "newtask", "Create one scheduler test task", cmd_newtask },
+    { "userspawn", "Spawn user program by path", cmd_userspawn },
     { "yield", "Yield to the next runnable task", cmd_yield },
 };
 
@@ -89,10 +86,17 @@ void shell_on_char(char c)
 
 static void shell_exec(void)
 {
+    size_t input_cmd_len;
+
     // TODO: trim buffer
 
     if (strlen(buffer) == 0)
         return;
+
+    // Length of chars before first space, ignore args.
+    input_cmd_len = 0;
+    while (input_cmd_len < length && buffer[input_cmd_len] != ' ')
+        input_cmd_len++;
 
     size_t n = sizeof(commands) / sizeof(commands[0]);
 
@@ -100,7 +104,8 @@ static void shell_exec(void)
         shell_cmd cmd = commands[i];
         size_t cmd_len = strlen(cmd.name);
 
-        if (cmd_len == length && memcmp(buffer, cmd.name, cmd_len) == 0) {
+        if (cmd_len == input_cmd_len &&
+                memcmp(buffer, cmd.name, cmd_len) == 0) {
             cmd.fn();
             return;
         }
@@ -239,39 +244,28 @@ static void cmd_initramfs(void)
     initramfs_list();
 }
 
-static void cmd_userinit(void)
+static void cmd_userspawn(void)
 {
+    const char *path;
+    size_t cmd_len;
     int task;
 
-    task = kthread_create(user_init);
-    printk("userinit: task=%x\n", task);
-
-    if (task < 0)
-        printk("userinit: failed to create init task\n");
-}
-
-static void cmd_newtask(void)
-{
-    int task;
-
-    sched_init();
-
-    task = kthread_create(test_task);
-    printk("newtask: task=%x\n", task);
-
-    if (task < 0) {
-        printk("newtask: failed to create test task\n");
+    cmd_len = strlen("userspawn");
+    if (length <= cmd_len || buffer[cmd_len] != ' ') {
+        printk("usage: userspawn PATH\n");
         return;
     }
+
+    path = buffer + cmd_len + 1;
+    task = user_spawn(path);
+    printk("userspawn: task=%x\n", task);
+
+    if (task < 0)
+        printk("userspawn: failed to create user task\n");
 }
 
 static void cmd_yield(void)
 {
     sched_init();
     sched_yield();
-}
-
-static void test_task(void)
-{
-    printk("newtask: task ran\n");
 }

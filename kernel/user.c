@@ -5,14 +5,19 @@
 #include <kernel/endian.h>
 #include <kernel/initramfs.h>
 #include <kernel/pmm.h>
+#include <kernel/sched.h>
 #include <kernel/user.h>
 #include <kernel/vmm.h>
 
 static const char init_message[] = "hello from user init\n";
 
-static user_process init_process;
-static user_process *current_process;
+static user_process exec_process;
 static uint32_t next_process_id;
+static char exec_path[EMXA_PATH_SIZE];
+
+static int user_process_init(user_process *process);
+static int user_prepare_exec(user_process *process, const char *path);
+static void user_exec_task(void);
 
 static void user_process_free_pages(user_process *process)
 {
@@ -100,49 +105,65 @@ static int load_emxf(user_process *process, const void *image, size_t size)
     return 0;
 }
 
-void user_init(void)
+int user_spawn(const char *path)
 {
-    user_process *process;
+    const void *emxf;
+    uint32_t emxf_size;
+    size_t path_len;
+    int task;
 
-    process = user_process_create();
-    if (process == NULL)
+    if (path == NULL)
+        return -1;
+
+    path_len = strlen(path);
+    if (path_len == 0 || path_len >= EMXA_PATH_SIZE)
+        return -1;
+    if (initramfs_find(path, &emxf, &emxf_size) != 0)
+        return -1;
+
+    memcpy(exec_path, path, path_len + 1);
+
+    task = kthread_create(user_exec_task);
+    return task;
+}
+
+static void user_exec_task(void)
+{
+    if (user_process_init(&exec_process) != 0)
         return;
 
-    if (user_prepare_init(process) != 0)
+    if (user_prepare_exec(&exec_process, exec_path) != 0)
         return;
 
-    user_enter(process);
+    user_enter(&exec_process);
 }
 
-user_process *user_process_create(void)
+static int user_process_init(user_process *process)
 {
-    init_process.id = next_process_id++;
-    init_process.entry = 0;
-    init_process.stack_top = 0;
-    init_process.exit_status = 0;
-    init_process.exited = 0;
-    init_process.page_count = 0;
-
-    current_process = &init_process;
-    return current_process;
-}
-
-user_process *user_current_process(void)
-{
-    return current_process;
-}
-
-int user_prepare_init(user_process *process)
-{
-    const void *image;
-    uint32_t image_size;
-
     if (process == NULL)
         return -1;
 
-    if (initramfs_find("/bin/init", &image, &image_size) != 0)
+    process->id = next_process_id++;
+    process->entry = 0;
+    process->stack_top = 0;
+    process->exit_status = 0;
+    process->exited = 0;
+    process->page_count = 0;
+
+    return 0;
+}
+
+int user_prepare_exec(user_process *process, const char *path)
+{
+    const void *emxf;
+    uint32_t emxf_size;
+
+    if (process == NULL || path == NULL)
+        return -1;
+
+    if (initramfs_find(path, &emxf, &emxf_size) != 0)
         goto fail;
-    if (load_emxf(process, image, image_size) != 0)
+    if (load_emxf(process, emxf, emxf_size) != 0)
         goto fail;
     if (map_copied_user_page(process, USER_INIT_DATA_ADDR, init_message,
             USER_INIT_MESSAGE_LEN + 1, 0) != 0)
@@ -162,10 +183,7 @@ fail:
 
 void user_exit_current(uint32_t status)
 {
-    if (current_process == NULL)
-        return;
-
-    current_process->exit_status = status;
-    current_process->exited = 1;
-    user_process_free_pages(current_process);
+    exec_process.exit_status = status;
+    exec_process.exited = 1;
+    user_process_free_pages(&exec_process);
 }
