@@ -5,6 +5,7 @@
 #include <kernel/shell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
+#include <kernel/user.h>
 
 static volatile uint32_t irq_counts[16];
 
@@ -68,7 +69,10 @@ void irq_handler(uint32_t irq)
         key[1] = '\0';
 
         if (key[0]) {
-            shell_on_char(key[0]);
+            if (user_has_input_focus())
+                keyboard_buffer_push(key[0]);
+            else
+                shell_on_char(key[0]);
 
             u32_to_hex(sc_hex, sc);
             serial_writestring("scancode=");

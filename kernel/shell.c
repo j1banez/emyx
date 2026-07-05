@@ -4,6 +4,7 @@
 #include <kernel/arch.h>
 #include <kernel/initramfs.h>
 #include <kernel/interrupt.h>
+#include <kernel/keyboard.h>
 #include <kernel/kmalloc.h>
 #include <kernel/pmm.h>
 #include <kernel/printk.h>
@@ -36,6 +37,7 @@ static void cmd_yield(void);
 
 static char buffer[128];
 static uint32_t length;
+static uint8_t command_ready;
 
 static const shell_cmd commands[] = {
     { "help", "List commands", cmd_help },
@@ -56,6 +58,7 @@ void shell_init(void)
 {
     memset(buffer, 0, sizeof(buffer));
     length = 0;
+    command_ready = 0;
     printk("emyx> ");
 }
 
@@ -64,8 +67,7 @@ void shell_on_char(char c)
     switch (c) {
         case '\n':
             printk("%c", c);
-            shell_exec();
-            shell_init();
+            command_ready = 1;
             break;
         case '\b':
             if (length > 0) {
@@ -82,6 +84,15 @@ void shell_on_char(char c)
             }
             break;
     }
+}
+
+void shell_poll(void)
+{
+    if (!command_ready)
+        return;
+
+    shell_exec();
+    shell_init();
 }
 
 static void shell_exec(void)
@@ -267,5 +278,6 @@ static void cmd_userspawn(void)
 static void cmd_yield(void)
 {
     sched_init();
+    keyboard_buffer_clear();
     sched_yield();
 }

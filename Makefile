@@ -87,8 +87,8 @@ user/%.emxf: user/%.S
 	$(CC_BASE) -MD -c $< -o user/$*.o -ffreestanding -Wall -Wextra
 	$(OBJCOPY) -O binary -j .text user/$*.o $@
 
-user/initramfs.emxa: user/init.emxf user/hello.emxf scripts/mkemxa.py
-	python3 scripts/mkemxa.py $@ /bin/init user/init.emxf /bin/hello user/hello.emxf
+user/initramfs.emxa: user/init.emxf user/hello.emxf user/readkey.emxf scripts/mkemxa.py
+	python3 scripts/mkemxa.py $@ /bin/init user/init.emxf /bin/hello user/hello.emxf /bin/readkey user/readkey.emxf
 
 iso: build user/initramfs.emxa
 	mkdir -p isodir/boot/grub

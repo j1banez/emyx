@@ -31,6 +31,7 @@ typedef struct {
 } user_process;
 
 int user_spawn(const char *path);
+uint8_t user_has_input_focus(void);
 void user_enter(user_process *process);
 void user_exit_current(uint32_t status);
 

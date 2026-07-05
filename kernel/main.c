@@ -37,6 +37,7 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
     while (1) {
         // Wait for interrupt
         arch_idle();
+        shell_poll();
         timer_print();
     }
 }

@@ -108,7 +108,7 @@ void idt_init()
     }
 
     idt[0x80] = new_descriptor((uint32_t)syscall_stub,
-        GDT_KERNEL_CODE, 0xEE);
+        GDT_KERNEL_CODE, 0xEF);
 
     idtr.base = (uint32_t)idt;
     idtr.limit = sizeof(idt) - 1;

@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <kernel/keyboard.h>
 #include <kernel/printk.h>
 #include <kernel/sched.h>
 #include <kernel/syscall.h>
@@ -27,6 +28,8 @@ uint32_t syscall_dispatch(struct syscall_frame *frame)
         return SYS_ERR;
     case SYS_YIELD:
         return sys_yield();
+    case SYS_GETC:
+        return keyboard_buffer_pop();
     default:
         return SYS_ERR;
     }

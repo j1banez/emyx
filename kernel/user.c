@@ -4,6 +4,7 @@
 
 #include <kernel/endian.h>
 #include <kernel/initramfs.h>
+#include <kernel/keyboard.h>
 #include <kernel/pmm.h>
 #include <kernel/sched.h>
 #include <kernel/user.h>
@@ -13,6 +14,7 @@ static const char init_message[] = "hello from user init\n";
 
 static user_process exec_process;
 static uint32_t next_process_id;
+static uint8_t input_focus;
 static char exec_path[EMXA_PATH_SIZE];
 
 static int user_process_init(user_process *process);
@@ -122,6 +124,7 @@ int user_spawn(const char *path)
         return -1;
 
     memcpy(exec_path, path, path_len + 1);
+    keyboard_buffer_clear();
 
     task = kthread_create(user_exec_task);
     return task;
@@ -135,6 +138,7 @@ static void user_exec_task(void)
     if (user_prepare_exec(&exec_process, exec_path) != 0)
         return;
 
+    input_focus = 1;
     user_enter(&exec_process);
 }
 
@@ -181,8 +185,14 @@ fail:
     return -1;
 }
 
+uint8_t user_has_input_focus(void)
+{
+    return input_focus;
+}
+
 void user_exit_current(uint32_t status)
 {
+    input_focus = 0;
     exec_process.exit_status = status;
     exec_process.exited = 1;
     user_process_free_pages(&exec_process);
