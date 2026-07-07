@@ -87,6 +87,19 @@ user/%.emxf: user/%.S
 	$(CC_BASE) -MD -c $< -o user/$*.o -ffreestanding -Wall -Wextra
 	$(OBJCOPY) -O binary -j .text user/$*.o $@
 
+user/crt0.o: user/crt0.S
+	$(CC_BASE) -MD -c $< -o $@ -ffreestanding -Wall -Wextra
+
+user/%.o: user/%.c user/user.h
+	$(CC_BASE) -MD -c $< -o $@ -std=gnu11 -ffreestanding -Wall -Wextra -fno-pic -fno-pie
+
+user/%.elf: user/crt0.o user/%.o user/emxf.ld
+	$(CC_BASE) -T user/emxf.ld -o $@ -ffreestanding -nostdlib user/crt0.o user/$*.o -lgcc
+
+user/%.emxf: user/%.elf
+	$(OBJCOPY) -O binary $< $@
+	python3 scripts/check-emxf.py $@ $<
+
 user/initramfs.emxa: user/init.emxf user/hello.emxf user/readkey.emxf scripts/mkemxa.py
 	python3 scripts/mkemxa.py $@ /bin/init user/init.emxf /bin/hello user/hello.emxf /bin/readkey user/readkey.emxf
 
@@ -108,4 +121,5 @@ clean:
 		$(MAKE) -C "$$project" clean; \
 	done
 	rm -f user/*.o user/*.d user/*.emxf user/*.emxa
+	rm -f user/*.bin user/*.elf
 	rm -rf "$(SYSROOT)" isodir emyx.iso

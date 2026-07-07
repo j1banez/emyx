@@ -3,6 +3,8 @@ isodir
 sysroot
 user/*.d
 user/*.o
+user/*.bin
+user/*.elf
 user/*.emxf
 user/*.emxa
 
