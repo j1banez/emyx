@@ -8,6 +8,9 @@
 #define PAGE_TABLE_SPAN (1024u * PMM_PAGE_SIZE)
 #define VMM_PDE_INDEX(vaddr) (((vaddr) >> 22) & 0x3ff)
 #define VMM_PTE_INDEX(vaddr) (((vaddr) >> 12) & 0x3ff)
+#define KERNEL_VIRTUAL_BASE 0xC0000000u
+// The upper 10 virtual-address bits select PDE 768 at 0xC0000000.
+#define KERNEL_PDE_INDEX VMM_PDE_INDEX(KERNEL_VIRTUAL_BASE)
 
 static uintptr_t page_directory;
 
@@ -30,20 +33,25 @@ void vmm_init(size_t limit)
 
     for (size_t i = 0; i < limit / PAGE_TABLE_SPAN; i++) {
         uintptr_t page_table = pmm_alloc_page();
+        uintptr_t kernel_page_table = pmm_alloc_page();
 
-        if (page_table == 0)
+        if (page_table == 0 || kernel_page_table == 0)
             panic("vmm: page table allocation failed");
 
         memset((void *)page_table, 0, PMM_PAGE_SIZE);
+        memset((void *)kernel_page_table, 0, PMM_PAGE_SIZE);
 
         uint32_t *pt_ptr = (uint32_t *)page_table;
+        uint32_t *kernel_pt_ptr = (uint32_t *)kernel_page_table;
 
         for (size_t j = 0; j < 1024; j += 1) {
             uintptr_t frame = i * PAGE_TABLE_SPAN + j * PMM_PAGE_SIZE;
             pt_ptr[j] = frame | 0x3;
+            kernel_pt_ptr[j] = frame | 0x3;
         }
 
         pd_ptr[i] = page_table | 0x3;
+        pd_ptr[KERNEL_PDE_INDEX + i] = kernel_page_table | 0x3;
     }
 
     paging_load_directory(page_directory);

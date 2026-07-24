@@ -3,8 +3,8 @@
 #include <kernel/pmm.h>
 #include <kernel/printk.h>
 
-extern uint8_t __kernel_start[];
-extern uint8_t __kernel_end[];
+extern uint8_t __kernel_physical_start[];
+extern uint8_t __kernel_physical_end[];
 
 static uint8_t *pmm_bitmap;
 static uint32_t pmm_bitmap_bytes;
@@ -198,8 +198,8 @@ static uintptr_t find_segment(multiboot_info *mbi, uint32_t bytes)
         uintptr_t start = align_up(estart, PMM_PAGE_SIZE);
 
         while (start + bytes <= eend) {
-            uintptr_t kstart = (uintptr_t)__kernel_start;
-            uintptr_t kend = (uintptr_t)__kernel_end;
+            uintptr_t kstart = (uintptr_t)__kernel_physical_start;
+            uintptr_t kend = (uintptr_t)__kernel_physical_end;
 
             // Current range is overlaping kernel
             if (ranges_overlap(start, start + bytes, kstart, kend)) {
@@ -241,8 +241,8 @@ static void check_kernel_location(multiboot_info *mbi)
 {
     uint8_t *ptr = (uint8_t *)(uintptr_t)mbi->mmap_addr;
     uint8_t *end = ptr + mbi->mmap_length;
-    uint64_t kstart = (uint64_t)(uintptr_t)__kernel_start;
-    uint64_t kend = (uint64_t)(uintptr_t)__kernel_end;
+    uint64_t kstart = (uint64_t)(uintptr_t)__kernel_physical_start;
+    uint64_t kend = (uint64_t)(uintptr_t)__kernel_physical_end;
     uint64_t kernel_overlap = 0;
 
     while (ptr < end) {
@@ -282,7 +282,8 @@ void pmm_init(multiboot_info *mbi)
     pmm_free_pages = usable_pages;
 
     reserve_segment(bitmap_base, bitmap_base + pmm_bitmap_bytes);
-    reserve_segment((uintptr_t)__kernel_start, (uintptr_t)__kernel_end);
+    reserve_segment((uintptr_t)__kernel_physical_start,
+        (uintptr_t)__kernel_physical_end);
 
     // Reserve page 0 so memory address 0 (null pointer) is not allocatable.
     reserve_page(0);

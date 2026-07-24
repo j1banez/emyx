@@ -1,47 +1,48 @@
-/* The bootloader will look at this image and start execution at the symbol
-   designated at the entry point. */
 ENTRY(_start)
 
-/* Tell where the various sections of the object files will be put in the final
-   kernel image. */
+KERNEL_VIRTUAL_BASE = 0xC0000000;
+
 SECTIONS
 {
-    /* Begin putting sections at 1 MiB, a conventional place for kernels to be
-       loaded at by the bootloader. */
     . = 1M;
+    __kernel_physical_start = .;
 
+    .bootstrap BLOCK(4K) : ALIGN(4K)
+    {
+        KEEP(*(.multiboot))
+        *(.bootstrap.text)
+        *(.bootstrap.data)
+    }
+
+    .bootstrap_bss BLOCK(4K) (NOLOAD) : ALIGN(4K)
+    {
+        *(.bootstrap.bss)
+    }
+
+    . += KERNEL_VIRTUAL_BASE;
     __kernel_start = .;
 
-    /* First put the multiboot header, as it is required to be put very early
-       early in the image or the bootloader won't recognize the file format.
-       Next we'll put the .text section. */
-    .text BLOCK(4K) : ALIGN(4K)
+    .text BLOCK(4K) : AT(ADDR(.text) - KERNEL_VIRTUAL_BASE)
     {
-        *(.multiboot)
         *(.text)
     }
 
-    /* Read-only data. */
-    .rodata BLOCK(4K) : ALIGN(4K)
+    .rodata BLOCK(4K) : AT(ADDR(.rodata) - KERNEL_VIRTUAL_BASE)
     {
         *(.rodata)
     }
 
-    /* Read-write data (initialized) */
-    .data BLOCK(4K) : ALIGN(4K)
+    .data BLOCK(4K) : AT(ADDR(.data) - KERNEL_VIRTUAL_BASE)
     {
         *(.data)
     }
 
-    /* Read-write data (uninitialized) and stack */
-    .bss BLOCK(4K) : ALIGN(4K)
+    .bss BLOCK(4K) : AT(ADDR(.bss) - KERNEL_VIRTUAL_BASE)
     {
         *(COMMON)
         *(.bss)
     }
 
     __kernel_end = .;
-
-    /* The compiler may produce other sections, put them in the proper place in
-       in this file, if you'd like to include them in the final kernel. */
+    __kernel_physical_end = __kernel_end - KERNEL_VIRTUAL_BASE;
 }
