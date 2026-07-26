@@ -2,6 +2,7 @@
 #include <kernel/panic.h>
 #include <kernel/pmm.h>
 #include <kernel/printk.h>
+#include <kernel/vmm.h>
 
 extern uint8_t __kernel_physical_start[];
 extern uint8_t __kernel_physical_end[];
@@ -67,7 +68,10 @@ static void check_mmap(multiboot_info *mbi)
     if (!(mbi->flags & MULTIBOOT_FLAG_MMAP))
         panic("multiboot: mmap not present\n");
 
-    uint8_t *ptr = (uint8_t *)(uintptr_t)mbi->mmap_addr;
+    uint8_t *ptr = vmm_phys_to_virt(mbi->mmap_addr);
+    if (ptr == NULL)
+        panic("multiboot: mmap is outside direct map\n");
+
     uint8_t *end = ptr + mbi->mmap_length;
 
     while (ptr < end) {
@@ -90,7 +94,7 @@ static void check_mmap(multiboot_info *mbi)
  */
 static uint32_t clear_usable_pages(multiboot_info *mbi)
 {
-    uint8_t *ptr = (uint8_t *)(uintptr_t)mbi->mmap_addr;
+    uint8_t *ptr = vmm_phys_to_virt(mbi->mmap_addr);
     uint8_t *end = ptr + mbi->mmap_length;
     uint32_t usable_pages = 0;
 
@@ -128,7 +132,7 @@ static uint32_t clear_usable_pages(multiboot_info *mbi)
  */
 static uint32_t find_max_page(multiboot_info *mbi)
 {
-    uint8_t *ptr = (uint8_t *)(uintptr_t)mbi->mmap_addr;
+    uint8_t *ptr = vmm_phys_to_virt(mbi->mmap_addr);
     uint8_t *end = ptr + mbi->mmap_length;
     uint64_t max_page = 0;
 
@@ -181,7 +185,7 @@ static int ranges_overlap(
  */
 static uintptr_t find_segment(multiboot_info *mbi, uint32_t bytes)
 {
-    uint8_t *ptr = (uint8_t *)(uintptr_t)mbi->mmap_addr;
+    uint8_t *ptr = vmm_phys_to_virt(mbi->mmap_addr);
     uint8_t *end = ptr + mbi->mmap_length;
 
     while (ptr < end) {
@@ -207,7 +211,7 @@ static uintptr_t find_segment(multiboot_info *mbi, uint32_t bytes)
                 continue;
             }
 
-            uintptr_t mbi_start = (uintptr_t)mbi;
+            uintptr_t mbi_start = vmm_virt_to_phys(mbi);
             uintptr_t mbi_end = mbi_start + sizeof(*mbi);
 
             // Current range is overlaping multiboot info
@@ -239,7 +243,7 @@ static uintptr_t find_segment(multiboot_info *mbi, uint32_t bytes)
  */
 static void check_kernel_location(multiboot_info *mbi)
 {
-    uint8_t *ptr = (uint8_t *)(uintptr_t)mbi->mmap_addr;
+    uint8_t *ptr = vmm_phys_to_virt(mbi->mmap_addr);
     uint8_t *end = ptr + mbi->mmap_length;
     uint64_t kstart = (uint64_t)(uintptr_t)__kernel_physical_start;
     uint64_t kend = (uint64_t)(uintptr_t)__kernel_physical_end;
@@ -270,7 +274,9 @@ void pmm_init(multiboot_info *mbi)
 
     check_kernel_location(mbi);
 
-    pmm_bitmap = (uint8_t *)bitmap_base;
+    pmm_bitmap = vmm_phys_to_virt(bitmap_base);
+    if (pmm_bitmap == NULL)
+        panic("pmm: bitmap is outside direct map");
 
     for (uint32_t i = 0; i < pmm_bitmap_bytes; i++) {
         pmm_bitmap[i] = 0xFF;

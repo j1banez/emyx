@@ -3,6 +3,7 @@
 
 #include <kernel/boot.h>
 #include <kernel/printk.h>
+#include <kernel/vmm.h>
 
 static const void *module_start;
 static uint32_t module_size;
@@ -19,8 +20,17 @@ void boot_init(multiboot_info *mbi)
         return;
     }
 
-    mods = (multiboot_module *)(uintptr_t)mbi->mods_addr;
-    module_start = (const void *)(uintptr_t)mods[0].mod_start;
+    mods = vmm_phys_to_virt(mbi->mods_addr);
+    if (mods == NULL) {
+        printk("boot: module list is outside direct map\n");
+        return;
+    }
+
+    module_start = vmm_phys_to_virt(mods[0].mod_start);
+    if (module_start == NULL) {
+        printk("boot: module is outside direct map\n");
+        return;
+    }
     module_size = mods[0].mod_end - mods[0].mod_start;
 
     printk("boot: module start=%x size=%x\n", module_start, module_size);

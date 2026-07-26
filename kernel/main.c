@@ -24,7 +24,9 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
         panic("multiboot: wrong magic value\n");
     }
 
-    mbi = (multiboot_info *)(uintptr_t)mbi_addr;
+    mbi = vmm_phys_to_virt(mbi_addr);
+    if (mbi == NULL)
+        panic("multiboot: info is outside direct map");
 
     pmm_init(mbi);
     boot_init(mbi);

@@ -21,6 +21,18 @@ void *vmm_phys_to_virt(uintptr_t paddr)
     return (void *)(VMM_KERNEL_VIRTUAL_BASE + paddr);
 }
 
+uintptr_t vmm_virt_to_phys(const void *vaddr)
+{
+    uintptr_t addr;
+
+    addr = (uintptr_t)vaddr;
+    if (addr < VMM_KERNEL_VIRTUAL_BASE ||
+            addr >= VMM_KERNEL_VIRTUAL_BASE + VMM_DIRECT_MAP_LIMIT)
+        return 0;
+
+    return addr - VMM_KERNEL_VIRTUAL_BASE;
+}
+
 void vmm_init(size_t limit)
 {
     if (limit < 1)

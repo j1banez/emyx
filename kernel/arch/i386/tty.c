@@ -4,13 +4,15 @@
 #include <string.h>
 
 #include <kernel/tty.h>
+#include <kernel/vmm.h>
 
 #include "io.h"
 #include "vga.h"
 
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
-static uint16_t* const VGA_MEMORY = (uint16_t*) 0xB8000;
+static uint16_t *const VGA_MEMORY =
+    (uint16_t *)(VMM_KERNEL_VIRTUAL_BASE + 0xB8000u);
 
 static size_t terminal_row;
 static size_t terminal_column;

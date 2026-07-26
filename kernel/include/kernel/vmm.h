@@ -12,6 +12,7 @@
 
 void vmm_init(size_t limit);
 void *vmm_phys_to_virt(uintptr_t paddr);
+uintptr_t vmm_virt_to_phys(const void *vaddr);
 int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags);
 int vmm_unmap_page(uintptr_t vaddr);
 int vmm_get_physaddr(uintptr_t vaddr, uintptr_t *paddr);

@@ -42,6 +42,7 @@ static int map_copied_user_page(user_process *process, uintptr_t vaddr,
     const void *src, size_t size, uint32_t flags)
 {
     uintptr_t paddr;
+    void *page;
 
     if (process == NULL || process->page_count >= USER_PROCESS_MAX_PAGES)
         return -1;
@@ -51,14 +52,16 @@ static int map_copied_user_page(user_process *process, uintptr_t vaddr,
     paddr = pmm_alloc_page();
     if (paddr == 0)
         return -1;
-    if (paddr >= VMM_DIRECT_MAP_LIMIT) {
+
+    page = vmm_phys_to_virt(paddr);
+    if (page == NULL) {
         pmm_free_page(paddr);
         return -1;
     }
 
-    memset((void *)paddr, 0, PMM_PAGE_SIZE);
+    memset(page, 0, PMM_PAGE_SIZE);
     if (src != NULL)
-        memcpy((void *)paddr, src, size);
+        memcpy(page, src, size);
 
     if (vmm_map_page(vaddr, paddr,
             VMM_PAGE_PRESENT | VMM_PAGE_USER | flags) != 0) {
