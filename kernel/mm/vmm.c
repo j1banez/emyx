@@ -8,11 +8,18 @@
 #define PAGE_TABLE_SPAN (1024u * PMM_PAGE_SIZE)
 #define VMM_PDE_INDEX(vaddr) (((vaddr) >> 22) & 0x3ff)
 #define VMM_PTE_INDEX(vaddr) (((vaddr) >> 12) & 0x3ff)
-#define KERNEL_VIRTUAL_BASE 0xC0000000u
 // The upper 10 virtual-address bits select PDE 768 at 0xC0000000.
-#define KERNEL_PDE_INDEX VMM_PDE_INDEX(KERNEL_VIRTUAL_BASE)
+#define KERNEL_PDE_INDEX VMM_PDE_INDEX(VMM_KERNEL_VIRTUAL_BASE)
 
 static uintptr_t page_directory;
+
+void *vmm_phys_to_virt(uintptr_t paddr)
+{
+    if (paddr >= VMM_DIRECT_MAP_LIMIT)
+        return NULL;
+
+    return (void *)(VMM_KERNEL_VIRTUAL_BASE + paddr);
+}
 
 void vmm_init(size_t limit)
 {
@@ -27,9 +34,12 @@ void vmm_init(size_t limit)
     if (page_directory == 0)
         panic("vmm: page directory allocation failed");
 
-    memset((void *)page_directory, 0, PMM_PAGE_SIZE);
+    uint32_t *pd_ptr = vmm_phys_to_virt(page_directory);
 
-    uint32_t *pd_ptr = (uint32_t *)page_directory;
+    if (pd_ptr == NULL)
+        panic("vmm: page directory is outside direct map");
+
+    memset(pd_ptr, 0, PMM_PAGE_SIZE);
 
     for (size_t i = 0; i < limit / PAGE_TABLE_SPAN; i++) {
         uintptr_t page_table = pmm_alloc_page();
@@ -38,11 +48,14 @@ void vmm_init(size_t limit)
         if (page_table == 0 || kernel_page_table == 0)
             panic("vmm: page table allocation failed");
 
-        memset((void *)page_table, 0, PMM_PAGE_SIZE);
-        memset((void *)kernel_page_table, 0, PMM_PAGE_SIZE);
+        uint32_t *pt_ptr = vmm_phys_to_virt(page_table);
+        uint32_t *kernel_pt_ptr = vmm_phys_to_virt(kernel_page_table);
 
-        uint32_t *pt_ptr = (uint32_t *)page_table;
-        uint32_t *kernel_pt_ptr = (uint32_t *)kernel_page_table;
+        if (pt_ptr == NULL || kernel_pt_ptr == NULL)
+            panic("vmm: page table is outside direct map");
+
+        memset(pt_ptr, 0, PMM_PAGE_SIZE);
+        memset(kernel_pt_ptr, 0, PMM_PAGE_SIZE);
 
         for (size_t j = 0; j < 1024; j += 1) {
             uintptr_t frame = i * PAGE_TABLE_SPAN + j * PMM_PAGE_SIZE;
@@ -67,13 +80,13 @@ void vmm_init(size_t limit)
  */
 static uint32_t *vmm_get_page_table(uintptr_t vaddr)
 {
-    uint32_t *pd_ptr = (uint32_t *)page_directory;
+    uint32_t *pd_ptr = vmm_phys_to_virt(page_directory);
     uint32_t pde = pd_ptr[VMM_PDE_INDEX(vaddr)];
 
     if ((pde & 0x1) == 0)
         return 0;
 
-    return (uint32_t *)(uintptr_t)(pde & 0xfffff000);
+    return vmm_phys_to_virt(pde & 0xfffff000);
 }
 
 int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags)
@@ -92,7 +105,7 @@ int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags)
     if (pt_ptr == 0)
         return -1;
 
-    pd_ptr = (uint32_t *)page_directory;
+    pd_ptr = vmm_phys_to_virt(page_directory);
     pd_idx = VMM_PDE_INDEX(vaddr);
     pd_ptr[pd_idx] |= flags & 0xfff;
 

@@ -28,7 +28,7 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
 
     pmm_init(mbi);
     boot_init(mbi);
-    vmm_init(VMM_BOOTSTRAP_LIMIT);
+    vmm_init(VMM_DIRECT_MAP_LIMIT);
     arch_init();
     sched_init();
     shell_init();

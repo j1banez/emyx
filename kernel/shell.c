@@ -182,7 +182,7 @@ static void cmd_pagefault(void)
 {
     printk("Triggering pagefault...\n");
 
-    volatile uint32_t *bad = (volatile uint32_t *)VMM_BOOTSTRAP_LIMIT;
+    volatile uint32_t *bad = (volatile uint32_t *)VMM_DIRECT_MAP_LIMIT;
     volatile uint32_t val = *bad;
     (void)val;
 }

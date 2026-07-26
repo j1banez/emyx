@@ -51,7 +51,7 @@ static int map_copied_user_page(user_process *process, uintptr_t vaddr,
     paddr = pmm_alloc_page();
     if (paddr == 0)
         return -1;
-    if (paddr >= VMM_BOOTSTRAP_LIMIT) {
+    if (paddr >= VMM_DIRECT_MAP_LIMIT) {
         pmm_free_page(paddr);
         return -1;
     }
