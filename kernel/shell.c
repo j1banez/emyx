@@ -189,12 +189,27 @@ static void cmd_pagefault(void)
 
 static void cmd_vmmtest(void)
 {
+    uintptr_t address_space;
+    uintptr_t kernel_paddr;
+    uintptr_t shared_kernel_paddr;
     uintptr_t paddr;
     uintptr_t original_paddr;
     int ret;
 
-    ret = vmm_get_physaddr(0x00F00000, &paddr);
-    printk("vmm_get_physaddr before: ret=%x paddr=%x\n", ret, paddr);
+    address_space = vmm_create_address_space();
+    kernel_paddr = 0;
+    shared_kernel_paddr = 0;
+    ret = vmm_get_paddr((uintptr_t)cmd_vmmtest, &kernel_paddr);
+    ret |= vmm_get_paddr_in(address_space, (uintptr_t)cmd_vmmtest,
+        &shared_kernel_paddr);
+    if (kernel_paddr != shared_kernel_paddr)
+        ret = -1;
+    printk("vmm address space=%x kernel=%x shared=%x ret=%x\n",
+        address_space, kernel_paddr, shared_kernel_paddr, ret);
+    vmm_destroy_address_space(address_space);
+
+    ret = vmm_get_paddr(0x00F00000, &paddr);
+    printk("vmm_get_paddr before: ret=%x paddr=%x\n", ret, paddr);
 
     if (ret != 0)
         return;
@@ -205,8 +220,8 @@ static void cmd_vmmtest(void)
         VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE);
     printk("vmm_map_page: ret=%x\n", ret);
 
-    ret = vmm_get_physaddr(0x00F00000, &paddr);
-    printk("vmm_get_physaddr after map: ret=%x paddr=%x\n", ret, paddr);
+    ret = vmm_get_paddr(0x00F00000, &paddr);
+    printk("vmm_get_paddr after map: ret=%x paddr=%x\n", ret, paddr);
 
     ret = vmm_unmap_page(0x00F00000);
     printk("vmm_unmap_page: ret=%x\n", ret);
@@ -215,8 +230,8 @@ static void cmd_vmmtest(void)
         VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE);
     printk("vmm_restore_page: ret=%x\n", ret);
 
-    ret = vmm_get_physaddr(0x00F00000, &paddr);
-    printk("vmm_get_physaddr after restore: ret=%x paddr=%x\n", ret, paddr);
+    ret = vmm_get_paddr(0x00F00000, &paddr);
+    printk("vmm_get_paddr after restore: ret=%x paddr=%x\n", ret, paddr);
 }
 
 static void cmd_heaptest(void)
