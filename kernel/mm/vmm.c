@@ -114,8 +114,20 @@ uintptr_t vmm_create_address_space(void)
 
 void vmm_destroy_address_space(uintptr_t address_space)
 {
+    uint32_t *pd_ptr;
+    uint32_t i;
+
     if (address_space == 0 || address_space == page_directory)
         return;
+
+    pd_ptr = vmm_phys_to_virt(address_space);
+    if (pd_ptr == NULL)
+        return;
+
+    for (i = 0; i < KERNEL_PDE_INDEX; i++) {
+        if ((pd_ptr[i] & VMM_PAGE_PRESENT) != 0)
+            pmm_free_page(pd_ptr[i] & 0xfffff000);
+    }
 
     pmm_free_page(address_space);
 }
@@ -127,11 +139,6 @@ void vmm_destroy_address_space(uintptr_t address_space)
  * - pt_idx indexes page table entries in one page table.
  * - offset is byte offset inside the final 4 KiB physical page frame.
  */
-static uint32_t *vmm_get_page_table(uintptr_t vaddr)
-{
-    return vmm_get_page_table_in(page_directory, vaddr);
-}
-
 static uint32_t *vmm_get_page_table_in(uintptr_t address_space,
     uintptr_t vaddr)
 {
@@ -154,40 +161,92 @@ static uint32_t *vmm_get_page_table_in(uintptr_t address_space,
 
 int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags)
 {
+    uint32_t *pt_ptr;
+
+    if ((vaddr & (PMM_PAGE_SIZE - 1)) != 0 ||
+            (paddr & (PMM_PAGE_SIZE - 1)) != 0)
+        return -1;
+
+    pt_ptr = vmm_get_page_table_in(page_directory, vaddr);
+    if (pt_ptr != NULL)
+        pt_ptr[VMM_PTE_INDEX(vaddr)] = 0;
+
+    return vmm_map_page_in(page_directory, vaddr, paddr, flags);
+}
+
+int vmm_map_page_in(uintptr_t address_space, uintptr_t vaddr,
+    uintptr_t paddr, uint32_t flags)
+{
     uint32_t *pd_ptr;
     uint32_t pd_idx;
+    uint32_t pt_idx;
+    uint32_t *pt_ptr;
+    uintptr_t page_table;
 
-    // Check that addresses are page aligned
-    if ((vaddr & (PMM_PAGE_SIZE - 1)) != 0)
+    if (address_space == 0 || (vaddr & (PMM_PAGE_SIZE - 1)) != 0)
         return -1;
     if ((paddr & (PMM_PAGE_SIZE - 1)) != 0)
         return -1;
 
-    uint32_t *pt_ptr = vmm_get_page_table(vaddr);
-
-    if (pt_ptr == 0)
+    pd_idx = VMM_PDE_INDEX(vaddr);
+    if (address_space != page_directory && pd_idx >= KERNEL_PDE_INDEX)
         return -1;
 
-    pd_ptr = vmm_phys_to_virt(page_directory);
-    pd_idx = VMM_PDE_INDEX(vaddr);
-    pd_ptr[pd_idx] |= flags & 0xfff;
+    pd_ptr = vmm_phys_to_virt(address_space);
+    if (pd_ptr == NULL)
+        return -1;
 
-    pt_ptr[VMM_PTE_INDEX(vaddr)] = paddr | (flags & 0xfff);
+    if ((pd_ptr[pd_idx] & VMM_PAGE_PRESENT) != 0) {
+        pt_ptr = vmm_phys_to_virt(pd_ptr[pd_idx] & 0xfffff000);
+        if (pt_ptr == NULL)
+            return -1;
+    } else {
+        page_table = pmm_alloc_page();
+        if (page_table == 0)
+            return -1;
+
+        pt_ptr = vmm_phys_to_virt(page_table);
+        if (pt_ptr == NULL) {
+            pmm_free_page(page_table);
+            return -1;
+        }
+
+        memset(pt_ptr, 0, PMM_PAGE_SIZE);
+        pd_ptr[pd_idx] = page_table | VMM_PAGE_PRESENT;
+    }
+
+    pt_idx = VMM_PTE_INDEX(vaddr);
+    if ((pt_ptr[pt_idx] & VMM_PAGE_PRESENT) != 0)
+        return -1;
+
+    pd_ptr[pd_idx] |= flags & (VMM_PAGE_WRITABLE | VMM_PAGE_USER);
+    pt_ptr[pt_idx] = paddr | (flags & 0xfff);
     paging_tlb_invalidate(vaddr);
     return 0;
 }
 
 int vmm_unmap_page(uintptr_t vaddr)
 {
-    if ((vaddr & (PMM_PAGE_SIZE - 1)) != 0)
+    return vmm_unmap_page_in(page_directory, vaddr);
+}
+
+int vmm_unmap_page_in(uintptr_t address_space, uintptr_t vaddr)
+{
+    uint32_t *pt_ptr;
+    uint32_t pt_idx;
+
+    if (address_space == 0 || (vaddr & (PMM_PAGE_SIZE - 1)) != 0)
+        return -1;
+    if (address_space != page_directory &&
+            VMM_PDE_INDEX(vaddr) >= KERNEL_PDE_INDEX)
         return -1;
 
-    uint32_t *pt_ptr = vmm_get_page_table(vaddr);
+    pt_ptr = vmm_get_page_table_in(address_space, vaddr);
 
-    if (pt_ptr == 0)
+    if (pt_ptr == NULL)
         return -1;
 
-    uint32_t pt_idx = VMM_PTE_INDEX(vaddr);
+    pt_idx = VMM_PTE_INDEX(vaddr);
 
     if ((pt_ptr[pt_idx] & VMM_PAGE_PRESENT) == 0)
         return -1;

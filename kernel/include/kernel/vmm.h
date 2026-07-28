@@ -16,7 +16,10 @@ uintptr_t vmm_virt_to_phys(const void *vaddr);
 uintptr_t vmm_create_address_space(void);
 void vmm_destroy_address_space(uintptr_t address_space);
 int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags);
+int vmm_map_page_in(uintptr_t address_space, uintptr_t vaddr,
+    uintptr_t paddr, uint32_t flags);
 int vmm_unmap_page(uintptr_t vaddr);
+int vmm_unmap_page_in(uintptr_t address_space, uintptr_t vaddr);
 int vmm_get_paddr(uintptr_t vaddr, uintptr_t *paddr);
 int vmm_get_paddr_in(uintptr_t address_space, uintptr_t vaddr,
     uintptr_t *paddr);

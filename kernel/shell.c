@@ -192,9 +192,13 @@ static void cmd_vmmtest(void)
     uintptr_t address_space;
     uintptr_t kernel_paddr;
     uintptr_t shared_kernel_paddr;
+    uintptr_t user_page;
+    uintptr_t user_paddr;
     uintptr_t paddr;
     uintptr_t original_paddr;
+    int lookup_ret;
     int ret;
+    int unmap_ret;
 
     address_space = vmm_create_address_space();
     kernel_paddr = 0;
@@ -206,6 +210,25 @@ static void cmd_vmmtest(void)
         ret = -1;
     printk("vmm address space=%x kernel=%x shared=%x ret=%x\n",
         address_space, kernel_paddr, shared_kernel_paddr, ret);
+
+    user_page = pmm_alloc_page();
+    user_paddr = 0;
+    ret = vmm_map_page_in(address_space, 0x00400000, user_page,
+        VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE | VMM_PAGE_USER);
+    ret |= vmm_get_paddr_in(address_space, 0x00400000, &user_paddr);
+    if (user_paddr != user_page)
+        ret = -1;
+    printk("vmm user map page=%x paddr=%x ret=%x\n",
+        user_page, user_paddr, ret);
+
+    ret = vmm_map_page_in(address_space, 0x00400000, user_page,
+        VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE | VMM_PAGE_USER);
+    printk("vmm duplicate map: ret=%x\n", ret);
+
+    unmap_ret = vmm_unmap_page_in(address_space, 0x00400000);
+    lookup_ret = vmm_get_paddr_in(address_space, 0x00400000, &user_paddr);
+    printk("vmm user unmap: ret=%x lookup=%x\n", unmap_ret, lookup_ret);
+    pmm_free_page(user_page);
     vmm_destroy_address_space(address_space);
 
     ret = vmm_get_paddr(0x00F00000, &paddr);
@@ -215,6 +238,9 @@ static void cmd_vmmtest(void)
         return;
 
     original_paddr = paddr & ~(uintptr_t)(PMM_PAGE_SIZE - 1);
+
+    ret = vmm_unmap_page(0x00F00000);
+    printk("vmm_unmap_page before map: ret=%x\n", ret);
 
     ret = vmm_map_page(0x00F00000, 0x00000000,
         VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE);
