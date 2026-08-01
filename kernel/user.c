@@ -10,8 +10,6 @@
 #include <kernel/user.h>
 #include <kernel/vmm.h>
 
-static const char init_message[] = "hello from user init\n";
-
 static user_process exec_process;
 static uint32_t next_process_id;
 static uint8_t input_focus;
@@ -188,9 +186,6 @@ int user_prepare_exec(user_process *process, const char *path)
     if (initramfs_find(path, &emxf, &emxf_size) != 0)
         goto fail;
     if (load_emxf(process, emxf, emxf_size) != 0)
-        goto fail;
-    if (map_copied_user_page(process, USER_INIT_DATA_ADDR, init_message,
-            USER_INIT_MESSAGE_LEN + 1, 0) != 0)
         goto fail;
     if (map_copied_user_page(process, USER_INIT_STACK_ADDR, NULL, 0,
             VMM_PAGE_WRITABLE) != 0)
