@@ -57,28 +57,24 @@ void vmm_init(size_t limit)
     memset(pd_ptr, 0, PMM_PAGE_SIZE);
 
     for (size_t i = 0; i < limit / PAGE_TABLE_SPAN; i++) {
-        uintptr_t page_table = pmm_alloc_page();
         uintptr_t kernel_page_table = pmm_alloc_page();
 
-        if (page_table == 0 || kernel_page_table == 0)
+        if (kernel_page_table == 0)
             panic("vmm: page table allocation failed");
 
-        uint32_t *pt_ptr = vmm_phys_to_virt(page_table);
         uint32_t *kernel_pt_ptr = vmm_phys_to_virt(kernel_page_table);
 
-        if (pt_ptr == NULL || kernel_pt_ptr == NULL)
+        if (kernel_pt_ptr == NULL)
             panic("vmm: page table is outside direct map");
 
-        memset(pt_ptr, 0, PMM_PAGE_SIZE);
         memset(kernel_pt_ptr, 0, PMM_PAGE_SIZE);
 
         for (size_t j = 0; j < 1024; j += 1) {
             uintptr_t frame = i * PAGE_TABLE_SPAN + j * PMM_PAGE_SIZE;
-            pt_ptr[j] = frame | 0x3;
+
             kernel_pt_ptr[j] = frame | 0x3;
         }
 
-        pd_ptr[i] = page_table | 0x3;
         pd_ptr[KERNEL_PDE_INDEX + i] = kernel_page_table | 0x3;
     }
 

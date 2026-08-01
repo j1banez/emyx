@@ -1,5 +1,6 @@
 #include <kernel/kmalloc.h>
 #include <kernel/pmm.h>
+#include <kernel/vmm.h>
 
 #include <stdint.h>
 
@@ -27,10 +28,18 @@ static int align_size(size_t size, size_t *aligned)
 
 static heap_block *new_block(void)
 {
-    heap_block *block = (heap_block *)pmm_alloc_page();
+    uintptr_t paddr;
+    heap_block *block;
 
-    if (!block)
+    paddr = pmm_alloc_page();
+    if (paddr == 0)
         return NULL;
+
+    block = vmm_phys_to_virt(paddr);
+    if (block == NULL) {
+        pmm_free_page(paddr);
+        return NULL;
+    }
 
     block->size = PMM_PAGE_SIZE - sizeof(heap_block);
     block->free = 1;

@@ -195,7 +195,6 @@ static void cmd_vmmtest(void)
     uintptr_t user_page;
     uintptr_t user_paddr;
     uintptr_t paddr;
-    uintptr_t original_paddr;
     int lookup_ret;
     int ret;
     int unmap_ret;
@@ -231,16 +230,9 @@ static void cmd_vmmtest(void)
     pmm_free_page(user_page);
     vmm_destroy_address_space(address_space);
 
+    paddr = 0;
     ret = vmm_get_paddr(0x00F00000, &paddr);
-    printk("vmm_get_paddr before: ret=%x paddr=%x\n", ret, paddr);
-
-    if (ret != 0)
-        return;
-
-    original_paddr = paddr & ~(uintptr_t)(PMM_PAGE_SIZE - 1);
-
-    ret = vmm_unmap_page(0x00F00000);
-    printk("vmm_unmap_page before map: ret=%x\n", ret);
+    printk("vmm kernel low before: ret=%x\n", ret);
 
     ret = vmm_map_page(0x00F00000, 0x00000000,
         VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE);
@@ -252,12 +244,8 @@ static void cmd_vmmtest(void)
     ret = vmm_unmap_page(0x00F00000);
     printk("vmm_unmap_page: ret=%x\n", ret);
 
-    ret = vmm_map_page(0x00F00000, original_paddr,
-        VMM_PAGE_PRESENT | VMM_PAGE_WRITABLE);
-    printk("vmm_restore_page: ret=%x\n", ret);
-
     ret = vmm_get_paddr(0x00F00000, &paddr);
-    printk("vmm_get_paddr after restore: ret=%x paddr=%x\n", ret, paddr);
+    printk("vmm kernel low after: ret=%x\n", ret);
 }
 
 static void cmd_heaptest(void)
