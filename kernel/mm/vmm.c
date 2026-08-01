@@ -11,7 +11,7 @@
 // The upper 10 virtual-address bits select PDE 768 at 0xC0000000.
 #define KERNEL_PDE_INDEX VMM_PDE_INDEX(VMM_KERNEL_VIRTUAL_BASE)
 
-static uintptr_t page_directory;
+static uintptr_t kernel_page_directory;
 
 static uint32_t *vmm_get_page_table_in(uintptr_t address_space,
     uintptr_t vaddr);
@@ -44,12 +44,12 @@ void vmm_init(size_t limit)
     if (limit % PAGE_TABLE_SPAN != 0)
         panic("vmm: limit must be a multiple of page table span");
 
-    page_directory = pmm_alloc_page();
+    kernel_page_directory = pmm_alloc_page();
 
-    if (page_directory == 0)
+    if (kernel_page_directory == 0)
         panic("vmm: page directory allocation failed");
 
-    uint32_t *pd_ptr = vmm_phys_to_virt(page_directory);
+    uint32_t *pd_ptr = vmm_phys_to_virt(kernel_page_directory);
 
     if (pd_ptr == NULL)
         panic("vmm: page directory is outside direct map");
@@ -78,8 +78,13 @@ void vmm_init(size_t limit)
         pd_ptr[KERNEL_PDE_INDEX + i] = kernel_page_table | 0x3;
     }
 
-    paging_load_directory(page_directory);
+    paging_load_directory(kernel_page_directory);
     paging_enable();
+}
+
+uintptr_t vmm_get_kernel_address_space(void)
+{
+    return kernel_page_directory;
 }
 
 uintptr_t vmm_create_address_space(void)
@@ -101,7 +106,7 @@ uintptr_t vmm_create_address_space(void)
 
     memset(new_pd, 0, PMM_PAGE_SIZE);
 
-    current_pd = vmm_phys_to_virt(page_directory);
+    current_pd = vmm_phys_to_virt(kernel_page_directory);
     for (i = KERNEL_PDE_INDEX; i < 1024; i++)
         new_pd[i] = current_pd[i];
 
@@ -113,7 +118,7 @@ void vmm_destroy_address_space(uintptr_t address_space)
     uint32_t *pd_ptr;
     uint32_t i;
 
-    if (address_space == 0 || address_space == page_directory)
+    if (address_space == 0 || address_space == kernel_page_directory)
         return;
 
     pd_ptr = vmm_phys_to_virt(address_space);
@@ -163,11 +168,11 @@ int vmm_map_page(uintptr_t vaddr, uintptr_t paddr, uint32_t flags)
             (paddr & (PMM_PAGE_SIZE - 1)) != 0)
         return -1;
 
-    pt_ptr = vmm_get_page_table_in(page_directory, vaddr);
+    pt_ptr = vmm_get_page_table_in(kernel_page_directory, vaddr);
     if (pt_ptr != NULL)
         pt_ptr[VMM_PTE_INDEX(vaddr)] = 0;
 
-    return vmm_map_page_in(page_directory, vaddr, paddr, flags);
+    return vmm_map_page_in(kernel_page_directory, vaddr, paddr, flags);
 }
 
 int vmm_map_page_in(uintptr_t address_space, uintptr_t vaddr,
@@ -185,7 +190,7 @@ int vmm_map_page_in(uintptr_t address_space, uintptr_t vaddr,
         return -1;
 
     pd_idx = VMM_PDE_INDEX(vaddr);
-    if (address_space != page_directory && pd_idx >= KERNEL_PDE_INDEX)
+    if (address_space != kernel_page_directory && pd_idx >= KERNEL_PDE_INDEX)
         return -1;
 
     pd_ptr = vmm_phys_to_virt(address_space);
@@ -223,7 +228,7 @@ int vmm_map_page_in(uintptr_t address_space, uintptr_t vaddr,
 
 int vmm_unmap_page(uintptr_t vaddr)
 {
-    return vmm_unmap_page_in(page_directory, vaddr);
+    return vmm_unmap_page_in(kernel_page_directory, vaddr);
 }
 
 int vmm_unmap_page_in(uintptr_t address_space, uintptr_t vaddr)
@@ -233,7 +238,7 @@ int vmm_unmap_page_in(uintptr_t address_space, uintptr_t vaddr)
 
     if (address_space == 0 || (vaddr & (PMM_PAGE_SIZE - 1)) != 0)
         return -1;
-    if (address_space != page_directory &&
+    if (address_space != kernel_page_directory &&
             VMM_PDE_INDEX(vaddr) >= KERNEL_PDE_INDEX)
         return -1;
 
@@ -254,7 +259,7 @@ int vmm_unmap_page_in(uintptr_t address_space, uintptr_t vaddr)
 
 int vmm_get_paddr(uintptr_t vaddr, uintptr_t *paddr)
 {
-    return vmm_get_paddr_in(page_directory, vaddr, paddr);
+    return vmm_get_paddr_in(kernel_page_directory, vaddr, paddr);
 }
 
 int vmm_get_paddr_in(uintptr_t address_space, uintptr_t vaddr,

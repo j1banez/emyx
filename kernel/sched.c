@@ -2,9 +2,11 @@
 #include <stddef.h>
 
 #include <kernel/kmalloc.h>
+#include <kernel/paging.h>
 #include <kernel/panic.h>
 #include <kernel/printk.h>
 #include <kernel/sched.h>
+#include <kernel/vmm.h>
 
 #define MAX_TASKS 16u
 #define KTHREAD_STACK_SIZE 2048u
@@ -19,6 +21,7 @@ typedef enum {
 typedef struct {
     uint32_t id;
     task_state state;
+    uintptr_t address_space;
     uintptr_t stack_pointer;
     void *stack;
     void (*entry)(void);
@@ -42,6 +45,7 @@ void sched_init(void)
         tasks[i].id = 0;
         tasks[i].state = TASK_UNUSED;
         tasks[i].stack_pointer = 0;
+        tasks[i].address_space = 0;
         tasks[i].entry = NULL;
         tasks[i].stack = NULL;
     }
@@ -50,8 +54,19 @@ void sched_init(void)
     // Its stack pointer will be saved lazily on the first switch away.
     tasks[0].id = next_task_id++;
     tasks[0].state = TASK_RUNNING;
+    tasks[0].address_space = vmm_get_kernel_address_space();
     current_task = 0;
     initialized = 1;
+}
+
+int sched_set_current_address_space(uintptr_t address_space)
+{
+    if (current_task == 0 || address_space == 0)
+        return -1;
+
+    tasks[current_task].address_space = address_space;
+    paging_load_directory(address_space);
+    return 0;
 }
 
 int kthread_create(void (*entry)(void))
@@ -78,6 +93,8 @@ int kthread_create(void (*entry)(void))
         tasks[i].state = TASK_RUNNABLE;
         tasks[i].stack_pointer = sched_prepare_kthread_stack(stack,
             KTHREAD_STACK_SIZE, kthread_trampoline);
+        // Kernel threads share this until a user task adopts its own.
+        tasks[i].address_space = vmm_get_kernel_address_space();
         tasks[i].stack = stack;
         tasks[i].entry = entry;
 
@@ -118,6 +135,7 @@ void sched_yield(void)
             tasks[current_task].state = TASK_RUNNABLE;
         tasks[idx].state = TASK_RUNNING;
         current_task = idx;
+        paging_load_directory(tasks[idx].address_space);
         sched_context_switch(&tasks[old_task].stack_pointer,
             tasks[idx].stack_pointer);
         return;
@@ -138,6 +156,11 @@ static void task_cleanup(uint32_t idx)
     tasks[idx].state = TASK_UNUSED;
     tasks[idx].stack_pointer = 0;
     tasks[idx].entry = NULL;
+
+    if (tasks[idx].address_space != 0 &&
+            tasks[idx].address_space != vmm_get_kernel_address_space())
+        vmm_destroy_address_space(tasks[idx].address_space);
+    tasks[idx].address_space = 0;
 
     if (tasks[idx].stack != NULL) {
         kfree(tasks[idx].stack);

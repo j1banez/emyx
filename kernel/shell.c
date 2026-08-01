@@ -29,6 +29,7 @@ static void cmd_irq(void);
 static void cmd_panic(void);
 static void cmd_reboot(void);
 static void cmd_pagefault(void);
+static void sched_zero_address_space_test(void);
 static void cmd_vmmtest(void);
 static void cmd_heaptest(void);
 static void cmd_initramfs(void);
@@ -199,6 +200,14 @@ static void cmd_vmmtest(void)
     int ret;
     int unmap_ret;
 
+    ret = sched_set_current_address_space(vmm_get_kernel_address_space());
+    printk("sched task0 address space: ret=%x\n", ret);
+
+    ret = kthread_create(sched_zero_address_space_test);
+    printk("sched address space test task=%x\n", ret);
+    if (ret >= 0)
+        sched_yield();
+
     address_space = vmm_create_address_space();
     kernel_paddr = 0;
     shared_kernel_paddr = 0;
@@ -246,6 +255,14 @@ static void cmd_vmmtest(void)
 
     ret = vmm_get_paddr(0x00F00000, &paddr);
     printk("vmm kernel low after: ret=%x\n", ret);
+}
+
+static void sched_zero_address_space_test(void)
+{
+    int ret;
+
+    ret = sched_set_current_address_space(0);
+    printk("sched zero address space: ret=%x\n", ret);
 }
 
 static void cmd_heaptest(void)
