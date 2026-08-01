@@ -164,7 +164,8 @@ static int user_process_init(user_process *process)
     process->id = next_process_id++;
     process->address_space = 0;
     process->entry = 0;
-    process->stack_top = 0;
+    process->stack = NULL;
+    process->stack_size = 0;
     process->exit_status = 0;
     process->exited = 0;
     process->page_count = 0;
@@ -191,11 +192,12 @@ int user_prepare_exec(user_process *process, const char *path)
     if (map_copied_user_page(process, USER_INIT_DATA_ADDR, init_message,
             USER_INIT_MESSAGE_LEN + 1, 0) != 0)
         goto fail;
-    if (map_copied_user_page(process, USER_INIT_STACK_TOP - PMM_PAGE_SIZE,
-            NULL, 0, VMM_PAGE_WRITABLE) != 0)
+    if (map_copied_user_page(process, USER_INIT_STACK_ADDR, NULL, 0,
+            VMM_PAGE_WRITABLE) != 0)
         goto fail;
 
-    process->stack_top = USER_INIT_STACK_TOP;
+    process->stack = (void *)USER_INIT_STACK_ADDR;
+    process->stack_size = PMM_PAGE_SIZE;
 
     return 0;
 

@@ -135,6 +135,8 @@ void sched_yield(void)
             tasks[current_task].state = TASK_RUNNABLE;
         tasks[idx].state = TASK_RUNNING;
         current_task = idx;
+        if (tasks[idx].stack != NULL)
+            sched_set_kernel_task(tasks[idx].stack, KTHREAD_STACK_SIZE);
         paging_load_directory(tasks[idx].address_space);
         sched_context_switch(&tasks[old_task].stack_pointer,
             tasks[idx].stack_pointer);

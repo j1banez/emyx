@@ -11,6 +11,7 @@ void kthread_exit(void);
 void sched_yield(void);
 void sched_context_switch(uintptr_t *old_stack_pointer,
     uintptr_t new_stack_pointer);
+void sched_set_kernel_task(void *stack, size_t stack_size);
 uintptr_t sched_prepare_kthread_stack(void *stack, size_t stack_size,
     void (*trampoline)(void));
 

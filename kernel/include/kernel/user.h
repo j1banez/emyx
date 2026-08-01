@@ -6,7 +6,7 @@
 
 #define USER_INIT_CODE_ADDR 0x00400000u
 #define USER_INIT_DATA_ADDR 0x00401000u
-#define USER_INIT_STACK_TOP 0x00800000u
+#define USER_INIT_STACK_ADDR 0x007ff000u
 #define USER_INIT_MESSAGE_LEN 21u
 #define USER_PROCESS_MAX_PAGES 16u
 #define EMXF_HEADER_SIZE 12u
@@ -24,7 +24,8 @@ typedef struct {
     uint32_t id;
     uintptr_t address_space;
     uint32_t entry;
-    uint32_t stack_top;
+    void *stack;
+    size_t stack_size;
     uint32_t exit_status;
     uint8_t exited;
     user_page pages[USER_PROCESS_MAX_PAGES];

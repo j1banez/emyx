@@ -11,13 +11,12 @@
 void user_enter(user_process *process)
 {
     uint32_t eflags;
-    uintptr_t kernel_stack;
+    uintptr_t user_stack;
 
     if (process == NULL)
         return;
 
-    __asm__ volatile ("mov %%esp, %0" : "=r" (kernel_stack));
-    tss_set_kernel_stack(kernel_stack);
+    user_stack = (uintptr_t)process->stack + process->stack_size;
 
     __asm__ volatile ("pushf; pop %0" : "=r" (eflags));
     eflags |= 0x200;
@@ -31,7 +30,7 @@ void user_enter(user_process *process)
         "iret\n"
         :
         : [user_ss] "i" (USER_DATA_SELECTOR),
-          [user_esp] "r" (process->stack_top),
+          [user_esp] "r" (user_stack),
           [eflags] "r" (eflags),
           [user_cs] "i" (USER_CODE_SELECTOR),
           [user_eip] "r" (process->entry)
