@@ -208,6 +208,9 @@ static void cmd_vmmtest(void)
     if (ret >= 0)
         sched_yield();
 
+    ret = vmm_get_paddr(USER_INIT_CODE_ADDR, &paddr);
+    printk("vmm kernel user code: ret=%x\n", ret);
+
     address_space = vmm_create_address_space();
     kernel_paddr = 0;
     shared_kernel_paddr = 0;

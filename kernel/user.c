@@ -29,7 +29,8 @@ static void user_process_free_pages(user_process *process)
         return;
 
     for (i = 0; i < process->page_count; i++) {
-        vmm_unmap_page(process->pages[i].vaddr);
+        vmm_unmap_page_in(process->address_space,
+            process->pages[i].vaddr);
         pmm_free_page(process->pages[i].paddr);
         process->pages[i].vaddr = 0;
         process->pages[i].paddr = 0;
@@ -63,7 +64,7 @@ static int map_copied_user_page(user_process *process, uintptr_t vaddr,
     if (src != NULL)
         memcpy(page, src, size);
 
-    if (vmm_map_page(vaddr, paddr,
+    if (vmm_map_page_in(process->address_space, vaddr, paddr,
             VMM_PAGE_PRESENT | VMM_PAGE_USER | flags) != 0) {
         pmm_free_page(paddr);
         return -1;
@@ -139,10 +140,20 @@ static void user_exec_task(void)
         return;
 
     if (user_prepare_exec(&exec_process, exec_path) != 0)
-        return;
+        goto fail;
+
+    if (sched_set_current_address_space(exec_process.address_space) != 0) {
+        user_process_free_pages(&exec_process);
+        goto fail;
+    }
 
     input_focus = 1;
     user_enter(&exec_process);
+    return;
+
+fail:
+    vmm_destroy_address_space(exec_process.address_space);
+    exec_process.address_space = 0;
 }
 
 static int user_process_init(user_process *process)
@@ -151,11 +162,16 @@ static int user_process_init(user_process *process)
         return -1;
 
     process->id = next_process_id++;
+    process->address_space = 0;
     process->entry = 0;
     process->stack_top = 0;
     process->exit_status = 0;
     process->exited = 0;
     process->page_count = 0;
+
+    process->address_space = vmm_create_address_space();
+    if (process->address_space == 0)
+        return -1;
 
     return 0;
 }

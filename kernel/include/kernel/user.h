@@ -22,6 +22,7 @@ typedef struct {
 
 typedef struct {
     uint32_t id;
+    uintptr_t address_space;
     uint32_t entry;
     uint32_t stack_top;
     uint32_t exit_status;
