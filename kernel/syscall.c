@@ -71,16 +71,16 @@ static uint32_t sys_yield(void)
 static uint32_t sys_spawn(const char *path)
 {
     char kernel_path[EMXA_PATH_SIZE];
-    int task;
+    int process_id;
 
     if (copy_string_from_user(kernel_path, path, EMXA_PATH_SIZE) != 0)
         return SYS_ERR;
 
-    task = user_spawn(kernel_path);
-    if (task < 0)
+    process_id = user_spawn(kernel_path);
+    if (process_id < 0)
         return SYS_ERR;
 
-    return (uint32_t)task;
+    return (uint32_t)process_id;
 }
 
 static int copy_string_from_user(char *dst, const char *src, uint32_t max_len)

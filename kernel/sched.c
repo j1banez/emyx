@@ -30,7 +30,6 @@ typedef struct {
 static task tasks[MAX_TASKS];
 static uint32_t current_task;
 static uint32_t next_task_id;
-static uint8_t initialized;
 
 static void kthread_trampoline(void);
 static void task_cleanup(uint32_t idx);
@@ -38,9 +37,6 @@ static void reap_zombies(void);
 
 void sched_init(void)
 {
-    if (initialized)
-        return;
-
     for (uint32_t i = 0; i < MAX_TASKS; i++) {
         tasks[i].id = 0;
         tasks[i].state = TASK_UNUSED;
@@ -56,7 +52,11 @@ void sched_init(void)
     tasks[0].state = TASK_RUNNING;
     tasks[0].address_space = vmm_get_kernel_address_space();
     current_task = 0;
-    initialized = 1;
+}
+
+uint32_t sched_current_task_id(void)
+{
+    return tasks[current_task].id;
 }
 
 int sched_set_current_address_space(uintptr_t address_space)
@@ -75,9 +75,6 @@ int kthread_create(void (*entry)(void))
 
     if (entry == NULL)
         return -1;
-
-    if (!initialized)
-        sched_init();
 
     reap_zombies();
 
@@ -117,9 +114,6 @@ void kthread_exit(void)
 void sched_yield(void)
 {
     uint32_t old_task;
-
-    if (!initialized)
-        sched_init();
 
     reap_zombies();
 

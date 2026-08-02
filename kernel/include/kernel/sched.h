@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 void sched_init(void);
+uint32_t sched_current_task_id(void);
 int sched_set_current_address_space(uintptr_t address_space);
 int kthread_create(void (*entry)(void));
 void kthread_exit(void);

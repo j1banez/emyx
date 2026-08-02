@@ -308,7 +308,7 @@ static void cmd_userspawn(void)
 {
     const char *path;
     size_t cmd_len;
-    int task;
+    int process_id;
 
     cmd_len = strlen("userspawn");
     if (length <= cmd_len || buffer[cmd_len] != ' ') {
@@ -317,16 +317,15 @@ static void cmd_userspawn(void)
     }
 
     path = buffer + cmd_len + 1;
-    task = user_spawn(path);
-    printk("userspawn: task=%x\n", task);
+    process_id = user_spawn(path);
+    printk("userspawn: process=%x\n", process_id);
 
-    if (task < 0)
-        printk("userspawn: failed to create user task\n");
+    if (process_id < 0)
+        printk("userspawn: failed to create user process\n");
 }
 
 static void cmd_yield(void)
 {
-    sched_init();
     keyboard_buffer_clear();
     sched_yield();
 }

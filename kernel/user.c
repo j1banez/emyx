@@ -10,14 +10,90 @@
 #include <kernel/user.h>
 #include <kernel/vmm.h>
 
-static user_process exec_process;
-static uint32_t next_process_id;
-static uint8_t input_focus;
-static char exec_path[EMXA_PATH_SIZE];
+static user_process processes[USER_PROCESS_MAX];
+static uint32_t next_pid;
 
-static int user_process_init(user_process *process);
+static user_process *user_process_alloc(void);
+static user_process *user_process_find_by_pid(uint32_t pid);
+static user_process *user_process_find_by_task_id(uint32_t task_id);
+static void user_process_release(user_process *process);
+static void user_process_orphan_children(user_process *parent);
 static int user_prepare_exec(user_process *process, const char *path);
 static void user_exec_task(void);
+
+static user_process *user_process_alloc(void)
+{
+    uint32_t i;
+    user_process *process;
+
+    for (i = 0; i < USER_PROCESS_MAX; i++) {
+        process = &processes[i];
+        if (process->state != USER_PROCESS_FREE)
+            continue;
+
+        memset(process, 0, sizeof(*process));
+        process->state = USER_PROCESS_CREATED;
+        process->parent_pid = USER_PROCESS_NO_PARENT;
+        return process;
+    }
+
+    return NULL;
+}
+
+static user_process *user_process_find_by_pid(uint32_t pid)
+{
+    uint32_t i;
+
+    for (i = 0; i < USER_PROCESS_MAX; i++) {
+        if (processes[i].state != USER_PROCESS_FREE &&
+                processes[i].pid == pid)
+            return &processes[i];
+    }
+
+    return NULL;
+}
+
+static user_process *user_process_find_by_task_id(uint32_t task_id)
+{
+    uint32_t i;
+
+    for (i = 0; i < USER_PROCESS_MAX; i++) {
+        if (processes[i].state != USER_PROCESS_FREE &&
+                processes[i].task_id == task_id)
+            return &processes[i];
+    }
+
+    return NULL;
+}
+
+static void user_process_release(user_process *process)
+{
+    if (process == NULL)
+        return;
+
+    // Zeroing the record sets state to USER_PROCESS_FREE, whose value is zero.
+    memset(process, 0, sizeof(*process));
+}
+
+static void user_process_orphan_children(user_process *parent)
+{
+    uint32_t i;
+    user_process *child;
+
+    if (parent == NULL)
+        return;
+
+    for (i = 0; i < USER_PROCESS_MAX; i++) {
+        child = &processes[i];
+        if (child->state == USER_PROCESS_FREE ||
+                child->parent_pid != parent->pid)
+            continue;
+
+        child->parent_pid = USER_PROCESS_NO_PARENT;
+        if (child->state == USER_PROCESS_EXITED)
+            user_process_release(child);
+    }
+}
 
 static void user_process_free_pages(user_process *process)
 {
@@ -114,7 +190,9 @@ int user_spawn(const char *path)
     const void *emxf;
     uint32_t emxf_size;
     size_t path_len;
-    int task;
+    user_process *parent;
+    user_process *process;
+    int task_id;
 
     if (path == NULL)
         return -1;
@@ -125,54 +203,60 @@ int user_spawn(const char *path)
     if (initramfs_find(path, &emxf, &emxf_size) != 0)
         return -1;
 
-    memcpy(exec_path, path, path_len + 1);
-    keyboard_buffer_clear();
+    parent = user_process_find_by_task_id(sched_current_task_id());
 
-    task = kthread_create(user_exec_task);
-    return task;
+    process = user_process_alloc();
+    if (process == NULL)
+        return -1;
+
+    process->pid = next_pid++;
+    if (parent != NULL)
+        process->parent_pid = parent->pid;
+    memcpy(process->path, path, path_len + 1);
+
+    process->address_space = vmm_create_address_space();
+    if (process->address_space == 0)
+        goto fail;
+
+    task_id = kthread_create(user_exec_task);
+    if (task_id < 0)
+        goto fail;
+
+    process->task_id = (uint32_t)task_id;
+    keyboard_buffer_clear();
+    return (int)process->pid;
+
+fail:
+    if (process->address_space != 0)
+        vmm_destroy_address_space(process->address_space);
+    user_process_release(process);
+    return -1;
 }
 
 static void user_exec_task(void)
 {
-    if (user_process_init(&exec_process) != 0)
+    user_process *process;
+
+    process = user_process_find_by_task_id(sched_current_task_id());
+    if (process == NULL)
         return;
 
-    if (user_prepare_exec(&exec_process, exec_path) != 0)
+    if (user_prepare_exec(process, process->path) != 0)
         goto fail;
 
-    if (sched_set_current_address_space(exec_process.address_space) != 0) {
-        user_process_free_pages(&exec_process);
+    if (sched_set_current_address_space(process->address_space) != 0) {
+        user_process_free_pages(process);
         goto fail;
     }
 
-    input_focus = 1;
-    user_enter(&exec_process);
+    process->state = USER_PROCESS_RUNNING;
+    user_enter(process);
     return;
 
 fail:
-    vmm_destroy_address_space(exec_process.address_space);
-    exec_process.address_space = 0;
-}
-
-static int user_process_init(user_process *process)
-{
-    if (process == NULL)
-        return -1;
-
-    process->id = next_process_id++;
-    process->address_space = 0;
-    process->entry = 0;
-    process->stack = NULL;
-    process->stack_size = 0;
-    process->exit_status = 0;
-    process->exited = 0;
-    process->page_count = 0;
-
-    process->address_space = vmm_create_address_space();
-    if (process->address_space == 0)
-        return -1;
-
-    return 0;
+    if (process->address_space != 0)
+        vmm_destroy_address_space(process->address_space);
+    user_process_release(process);
 }
 
 int user_prepare_exec(user_process *process, const char *path)
@@ -203,13 +287,31 @@ fail:
 
 uint8_t user_has_input_focus(void)
 {
-    return input_focus;
+    user_process *process;
+
+    process = user_process_find_by_task_id(sched_current_task_id());
+    return process != NULL && process->state == USER_PROCESS_RUNNING;
 }
 
 void user_exit_current(uint32_t status)
 {
-    input_focus = 0;
-    exec_process.exit_status = status;
-    exec_process.exited = 1;
-    user_process_free_pages(&exec_process);
+    user_process *parent;
+    user_process *process;
+
+    process = user_process_find_by_task_id(sched_current_task_id());
+    if (process == NULL)
+        return;
+
+    process->exit_status = status;
+    process->state = USER_PROCESS_EXITED;
+    user_process_free_pages(process);
+
+    // The scheduler retains the adopted directory for zombie cleanup.
+    process->address_space = 0;
+    user_process_orphan_children(process);
+
+    parent = user_process_find_by_pid(process->parent_pid);
+    // Keep an exited child so its parent can collect its status with wait().
+    if (parent == NULL)
+        user_process_release(process);
 }

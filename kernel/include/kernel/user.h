@@ -4,9 +4,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <kernel/initramfs.h>
+
 #define USER_INIT_CODE_ADDR 0x00400000u
 #define USER_INIT_STACK_ADDR 0x007ff000u
 #define USER_PROCESS_MAX_PAGES 16u
+#define USER_PROCESS_MAX 16u
+#define USER_PROCESS_NO_PARENT UINT32_MAX
 #define EMXF_HEADER_SIZE 12u
 #define EMXF_MAGIC0 'E'
 #define EMXF_MAGIC1 'M'
@@ -18,14 +22,24 @@ typedef struct {
     uintptr_t paddr;
 } user_page;
 
+typedef enum {
+    USER_PROCESS_FREE,
+    USER_PROCESS_CREATED,
+    USER_PROCESS_RUNNING,
+    USER_PROCESS_EXITED,
+} user_process_state;
+
 typedef struct {
-    uint32_t id;
+    uint32_t pid;
+    uint32_t task_id;
+    uint32_t parent_pid;
     uintptr_t address_space;
     uint32_t entry;
     void *stack;
     size_t stack_size;
     uint32_t exit_status;
-    uint8_t exited;
+    user_process_state state;
+    char path[EMXA_PATH_SIZE];
     user_page pages[USER_PROCESS_MAX_PAGES];
     uint32_t page_count;
 } user_process;
