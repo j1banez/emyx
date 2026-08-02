@@ -233,6 +233,31 @@ fail:
     return -1;
 }
 
+int user_wait(uint32_t pid)
+{
+    uint32_t status;
+    user_process *caller;
+    user_process *child;
+
+    caller = user_process_find_by_task_id(sched_current_task_id());
+    if (caller == NULL)
+        return -1;
+
+    while (1) {
+        child = user_process_find_by_pid(pid);
+        if (child == NULL || child->parent_pid != caller->pid)
+            return -1;
+        if (child->state == USER_PROCESS_EXITED)
+            break;
+
+        sched_yield();
+    }
+
+    status = child->exit_status;
+    user_process_release(child);
+    return (int)status;
+}
+
 static void user_exec_task(void)
 {
     user_process *process;

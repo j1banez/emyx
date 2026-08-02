@@ -8,6 +8,7 @@
 #define SYS_YIELD 3u
 #define SYS_GETC 4u
 #define SYS_SPAWN 5u
+#define SYS_WAIT 6u
 
 #define SYS_FD_STDOUT 1u
 #define SYS_ERR ((uint32_t)-1)

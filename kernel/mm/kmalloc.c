@@ -69,7 +69,10 @@ static void *alloc_from_block(heap_block *block, size_t size)
 
 static void coalesce_next(heap_block *block)
 {
-    while (block->next != NULL && block->next->free) {
+    // List neighbors may come from noncontiguous physical pages.
+    while (block->next != NULL && block->next->free &&
+            (uint8_t *)(block + 1) + block->size ==
+            (uint8_t *)block->next) {
         block->size += sizeof(heap_block) + block->next->size;
         block->next = block->next->next;
     }

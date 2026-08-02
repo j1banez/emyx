@@ -13,6 +13,7 @@ static uint32_t sys_write(uint32_t fd, const char *buf, uint32_t len);
 static void sys_exit(uint32_t status);
 static uint32_t sys_yield(void);
 static uint32_t sys_spawn(const char *path);
+static uint32_t sys_wait(uint32_t pid);
 static int copy_string_from_user(char *dst, const char *src, uint32_t max_len);
 
 /*
@@ -36,6 +37,8 @@ uint32_t syscall_dispatch(struct syscall_frame *frame)
         return keyboard_buffer_pop();
     case SYS_SPAWN:
         return sys_spawn((const char *)frame->ebx);
+    case SYS_WAIT:
+        return sys_wait(frame->ebx);
     default:
         return SYS_ERR;
     }
@@ -81,6 +84,11 @@ static uint32_t sys_spawn(const char *path)
         return SYS_ERR;
 
     return (uint32_t)process_id;
+}
+
+static uint32_t sys_wait(uint32_t pid)
+{
+    return (uint32_t)user_wait(pid);
 }
 
 static int copy_string_from_user(char *dst, const char *src, uint32_t max_len)

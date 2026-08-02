@@ -2,6 +2,16 @@
 
 int main(void)
 {
-    spawn("/bin/hello");
-    return 0;
+    int pid;
+    int status;
+
+    pid = spawn("/bin/hello");
+    if (pid < 0)
+        return 1;
+
+    status = wait(pid);
+    if (status < 0)
+        return 1;
+
+    return status;
 }
