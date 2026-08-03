@@ -8,7 +8,7 @@
 #include <kernel/printk.h>
 #include <kernel/serial.h>
 #include <kernel/sched.h>
-#include <kernel/shell.h>
+#include <kernel/kshell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
 #include <kernel/vmm.h>
@@ -33,13 +33,13 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
     vmm_init(VMM_DIRECT_MAP_LIMIT);
     arch_init();
     sched_init();
-    shell_init();
+    kshell_init();
     irq_enable();
 
     while (1) {
         // Wait for interrupt
         arch_idle();
-        shell_poll();
+        kshell_poll();
         timer_print();
     }
 }

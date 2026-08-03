@@ -9,7 +9,7 @@
 #include <kernel/pmm.h>
 #include <kernel/printk.h>
 #include <kernel/sched.h>
-#include <kernel/shell.h>
+#include <kernel/kshell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
 #include <kernel/user.h>
@@ -19,9 +19,9 @@ typedef struct {
     const char *name;
     const char *desc;
     void (*fn)(void);
-} shell_cmd;
+} kshell_cmd;
 
-static void shell_exec(void);
+static void kshell_exec(void);
 static void cmd_help(void);
 static void cmd_clear(void);
 static void cmd_ticks(void);
@@ -40,7 +40,7 @@ static char buffer[128];
 static uint32_t length;
 static uint8_t command_ready;
 
-static const shell_cmd commands[] = {
+static const kshell_cmd commands[] = {
     { "help", "List commands", cmd_help },
     { "clear", "Clear screen", cmd_clear },
     { "ticks", "Show timer", cmd_ticks },
@@ -55,7 +55,7 @@ static const shell_cmd commands[] = {
     { "yield", "Yield to the next runnable task", cmd_yield },
 };
 
-void shell_init(void)
+void kshell_init(void)
 {
     memset(buffer, 0, sizeof(buffer));
     length = 0;
@@ -63,8 +63,10 @@ void shell_init(void)
     printk("emyx> ");
 }
 
-void shell_on_char(char c)
+void kshell_on_char(char c)
 {
+    // TODO: Queue complete lines,
+    // input can mutate a command awaiting kshell_poll().
     switch (c) {
         case '\n':
             printk("%c", c);
@@ -87,16 +89,16 @@ void shell_on_char(char c)
     }
 }
 
-void shell_poll(void)
+void kshell_poll(void)
 {
     if (!command_ready)
         return;
 
-    shell_exec();
-    shell_init();
+    kshell_exec();
+    kshell_init();
 }
 
-static void shell_exec(void)
+static void kshell_exec(void)
 {
     size_t input_cmd_len;
 
@@ -113,7 +115,7 @@ static void shell_exec(void)
     size_t n = sizeof(commands) / sizeof(commands[0]);
 
     for (size_t i = 0; i < n; i++) {
-        shell_cmd cmd = commands[i];
+        kshell_cmd cmd = commands[i];
         size_t cmd_len = strlen(cmd.name);
 
         if (cmd_len == input_cmd_len &&

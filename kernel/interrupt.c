@@ -2,7 +2,7 @@
 #include <kernel/keyboard.h>
 #include <kernel/printk.h>
 #include <kernel/serial.h>
-#include <kernel/shell.h>
+#include <kernel/kshell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
 #include <kernel/user.h>
@@ -72,7 +72,7 @@ void irq_handler(uint32_t irq)
             if (user_has_input_focus())
                 keyboard_buffer_push(key[0]);
             else
-                shell_on_char(key[0]);
+                kshell_on_char(key[0]);
 
             u32_to_hex(sc_hex, sc);
             serial_writestring("scancode=");

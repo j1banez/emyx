@@ -32,7 +32,7 @@ main.o \
 boot.o \
 interrupt.o \
 keyboard.o \
-shell.o \
+kshell.o \
 timer.o \
 sched.o \
 syscall.o \
