@@ -11,6 +11,7 @@
 #include <kernel/kshell.h>
 #include <kernel/timer.h>
 #include <kernel/tty.h>
+#include <kernel/user.h>
 #include <kernel/vmm.h>
 
 void kmain(uint32_t magic, uint32_t mbi_addr)
@@ -33,8 +34,9 @@ void kmain(uint32_t magic, uint32_t mbi_addr)
     vmm_init(VMM_DIRECT_MAP_LIMIT);
     arch_init();
     sched_init();
-    kshell_init();
     irq_enable();
+    user_init();
+    kshell_init();
 
     while (1) {
         // Wait for interrupt

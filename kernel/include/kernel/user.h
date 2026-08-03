@@ -10,7 +10,7 @@
 #define USER_INIT_STACK_ADDR 0x007ff000u
 #define USER_PROCESS_MAX_PAGES 16u
 #define USER_PROCESS_MAX 16u
-#define USER_PROCESS_NO_PARENT UINT32_MAX
+#define USER_PROCESS_NO_PARENT 0u
 #define EMXF_HEADER_SIZE 12u
 #define EMXF_MAGIC0 'E'
 #define EMXF_MAGIC1 'M'
@@ -44,6 +44,7 @@ typedef struct {
     uint32_t page_count;
 } user_process;
 
+void user_init(void);
 int user_spawn(const char *path);
 int user_wait(uint32_t pid);
 uint8_t user_has_input_focus(void);

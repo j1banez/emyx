@@ -6,12 +6,13 @@
 #include <kernel/initramfs.h>
 #include <kernel/keyboard.h>
 #include <kernel/pmm.h>
+#include <kernel/printk.h>
 #include <kernel/sched.h>
 #include <kernel/user.h>
 #include <kernel/vmm.h>
 
 static user_process processes[USER_PROCESS_MAX];
-static uint32_t next_pid;
+static uint32_t next_pid = 1u;
 
 static user_process *user_process_alloc(void);
 static user_process *user_process_find_by_pid(uint32_t pid);
@@ -185,6 +186,23 @@ static int load_emxf(user_process *process, const void *image, size_t size)
     return 0;
 }
 
+void user_init(void)
+{
+    int pid;
+
+    pid = user_spawn("/bin/init");
+    if (pid < 0) {
+        printk("user: failed to start /bin/init\n");
+        return;
+    }
+
+    printk("user: init pid=%x\n", (uint32_t)pid);
+    while (user_process_find_by_pid((uint32_t)pid) != NULL)
+        sched_yield();
+
+    printk("user: exiting userland\n");
+}
+
 int user_spawn(const char *path)
 {
     const void *emxf;
@@ -279,6 +297,7 @@ static void user_exec_task(void)
     return;
 
 fail:
+    printk("user: failed to execute %s\n", process->path);
     if (process->address_space != 0)
         vmm_destroy_address_space(process->address_space);
     user_process_release(process);
