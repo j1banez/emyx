@@ -39,6 +39,7 @@ static void cmd_yield(void);
 static char buffer[128];
 static uint32_t length;
 static uint8_t command_ready;
+static uint8_t active;
 
 static const kshell_cmd commands[] = {
     { "help", "List commands", cmd_help },
@@ -61,10 +62,14 @@ void kshell_init(void)
     length = 0;
     command_ready = 0;
     printk("emyx> ");
+    active = 1;
 }
 
 void kshell_on_char(char c)
 {
+    if (!active)
+        return;
+
     // TODO: Queue complete lines,
     // input can mutate a command awaiting kshell_poll().
     switch (c) {
