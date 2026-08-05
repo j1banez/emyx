@@ -61,7 +61,7 @@ void kshell_init(void)
     memset(buffer, 0, sizeof(buffer));
     length = 0;
     command_ready = 0;
-    printk("emyx> ");
+    printk("kshell> ");
     active = 1;
 }
 
@@ -81,7 +81,7 @@ void kshell_on_char(char c)
             if (length > 0) {
                 length--;
                 buffer[length] = '\0';
-                terminal_backspace();
+                printk("%c", c);
             }
             break;
         default:

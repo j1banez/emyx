@@ -13,6 +13,7 @@
 
 static user_process processes[USER_PROCESS_MAX];
 static uint32_t next_pid = 1u;
+static uint8_t userland_active;
 
 static user_process *user_process_alloc(void);
 static user_process *user_process_find_by_pid(uint32_t pid);
@@ -196,10 +197,12 @@ void user_init(void)
         return;
     }
 
+    userland_active = 1;
     printk("user: init pid=%x\n", (uint32_t)pid);
     while (user_process_find_by_pid((uint32_t)pid) != NULL)
         sched_yield();
 
+    userland_active = 0;
     printk("user: exiting userland\n");
 }
 
@@ -332,6 +335,9 @@ fail:
 uint8_t user_has_input_focus(void)
 {
     user_process *process;
+
+    if (userland_active)
+        return 1;
 
     process = user_process_find_by_task_id(sched_current_task_id());
     return process != NULL && process->state == USER_PROCESS_RUNNING;

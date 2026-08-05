@@ -83,6 +83,9 @@ build: headers
 		$(MAKE) -C "$$project" DESTDIR="$(SYSROOT)" $(SUBMAKE_VARS) install; \
 	done
 
+USER_PROGRAMS := init hello readkey shell
+USER_EMXFS := $(addprefix user/,$(addsuffix .emxf,$(USER_PROGRAMS)))
+
 user/%.emxf: user/%.S
 	$(CC_BASE) -MD -c $< -o user/$*.o -ffreestanding -Wall -Wextra
 	$(OBJCOPY) -O binary -j .text user/$*.o $@
@@ -100,8 +103,8 @@ user/%.emxf: user/%.elf
 	$(OBJCOPY) -O binary $< $@
 	python3 scripts/check-emxf.py $@ $<
 
-user/initramfs.emxa: user/init.emxf user/hello.emxf user/readkey.emxf scripts/mkemxa.py
-	python3 scripts/mkemxa.py $@ /bin/init user/init.emxf /bin/hello user/hello.emxf /bin/readkey user/readkey.emxf
+user/initramfs.emxa: $(USER_EMXFS) scripts/mkemxa.py
+	python3 scripts/mkemxa.py $@ $(foreach program,$(USER_PROGRAMS),/bin/$(program) user/$(program).emxf)
 
 iso: build user/initramfs.emxa
 	mkdir -p isodir/boot/grub

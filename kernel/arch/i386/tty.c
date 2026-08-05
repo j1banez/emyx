@@ -57,6 +57,11 @@ void terminal_setcolor(uint8_t color)
 
 void terminal_putchar(char c)
 {
+    if (c == '\b') {
+        terminal_backspace();
+        return;
+    }
+
     if (c == '\n') {
         terminal_column = 0;
         if (++terminal_row == VGA_HEIGHT)
