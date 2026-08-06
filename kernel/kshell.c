@@ -34,6 +34,7 @@ static void cmd_vmmtest(void);
 static void cmd_heaptest(void);
 static void cmd_initramfs(void);
 static void cmd_userspawn(void);
+static void cmd_userland(void);
 static void cmd_yield(void);
 
 static char buffer[128];
@@ -53,6 +54,7 @@ static const kshell_cmd commands[] = {
     { "heaptest", "Run heap smoke test", cmd_heaptest },
     { "initramfs", "Show first boot module", cmd_initramfs },
     { "userspawn", "Spawn user program by path", cmd_userspawn },
+    { "userland", "Start the userland init process", cmd_userland },
     { "yield", "Yield to the next runnable task", cmd_yield },
 };
 
@@ -329,6 +331,11 @@ static void cmd_userspawn(void)
 
     if (process_id < 0)
         printk("userspawn: failed to create user process\n");
+}
+
+static void cmd_userland(void)
+{
+    user_init();
 }
 
 static void cmd_yield(void)

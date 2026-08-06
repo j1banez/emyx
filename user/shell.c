@@ -33,6 +33,11 @@ int main(void)
             write(SYS_FD_STDOUT, "\n", 1);
             input[length] = '\0';
 
+            // `quit` builtin
+            if (length == 4 && input[0] == 'q' && input[1] == 'u' &&
+                    input[2] == 'i' && input[3] == 't')
+                return 0;
+
             if (length > 0) {
                 pid = spawn(input);
                 if (pid < 0) {
