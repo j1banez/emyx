@@ -1,23 +1,22 @@
 # Emyx
 
-Emyx is an ealry-stage operating system with a kernel and libc written from scratch.
+Emyx is an early-stage and experimental operating system with a kernel
+and userland written from scratch.
 
-![Kernel shell screenshot](docs/kernel-shell-screenshot.webp)
+![Emyx user shell](docs/user-shell-screenshot.webp)
 
-## Progression
+## Current state
 
-- [x] Bootable ISO (GRUB/Multiboot)
-- [x] VGA text-mode terminal output
-- [x] UART serial debug (COM1)
-- [x] GDT and IDT setup and load
-- [x] CPU exceptions (0-31) with panic diagnostics
-- [x] PIC remap and IRQ controller helpers (mask/unmask, EOI)
-- [x] IRQ0 timer ticks (PIT configured)
-- [x] IRQ1 keyboard press decoding
-- [x] Kernel shell with utility commands (help, clear, ticks, irq, panic, reboot)
-- [x] Physical memory managment
-- [x] Virtual memory managment (identity paging)
-- [x] Basic kernel heap allocator (`kmalloc`, `kfree`)
+- Boots on 32-bit x86 through GRUB
+- Handles interrupts, exceptions, the timer, and keyboard input
+- Manages physical and virtual memory
+- Runs a small heap allocator
+- Runs processes in separate address spaces
+- Uses cooperative scheduling for now to keep things simple
+- Provides basic system calls such as `spawn`, `wait`, and `yield`
+- Loads programs from an initramfs
+- Starts `/bin/init` as PID 1
+- Has a simple shell that can run programs
 
 ## Prerequisites
 
